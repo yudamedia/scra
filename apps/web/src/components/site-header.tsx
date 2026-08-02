@@ -1,9 +1,13 @@
-import Link from 'next/link'
+import Link from "next/link";
 
 const navLinks = [
-  { href: '/', label: 'Home' },
-  { href: '/areas', label: 'Area Guides' },
-]
+  { href: "/", label: "Home" },
+  { href: "/areas", label: "Area Guides" },
+  { href: "/issues", label: "Issues" },
+  { href: "/directory", label: "Directory" },
+  { href: "/committees", label: "Committees" },
+  { href: "/leadership", label: "Leadership" },
+];
 
 export function SiteHeader() {
   return (
@@ -12,12 +16,12 @@ export function SiteHeader() {
         <Link href="/" className="font-heading font-bold text-lg text-primary leading-tight">
           South Coast Residents&apos; Association
         </Link>
-        <nav className="flex items-center gap-8">
+        <nav className="flex items-center gap-6">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="font-medium text-primary hover:text-secondary transition-colors"
+              className="font-medium text-primary hover:text-secondary transition-colors text-sm"
             >
               {link.label}
             </Link>
@@ -25,5 +29,5 @@ export function SiteHeader() {
         </nav>
       </div>
     </header>
-  )
+  );
 }

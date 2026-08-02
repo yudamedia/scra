@@ -59,6 +59,26 @@ export const Issues: CollectionConfig = {
       relationTo: 'media',
     },
     {
+      name: 'gallery',
+      type: 'array',
+      labels: {
+        singular: 'Photo',
+        plural: 'Gallery Photos',
+      },
+      fields: [
+        {
+          name: 'image',
+          type: 'upload',
+          relationTo: 'media',
+          required: true,
+        },
+        {
+          name: 'caption',
+          type: 'text',
+        },
+      ],
+    },
+    {
       name: 'background',
       type: 'richText',
       required: true,

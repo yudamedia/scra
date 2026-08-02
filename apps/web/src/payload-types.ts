@@ -308,6 +308,13 @@ export interface Issue {
   status: 'received' | 'under-review' | 'in-progress' | 'resolved';
   area?: (number | null) | Area;
   featuredImage?: (number | null) | Media;
+  gallery?:
+    | {
+        image: number | Media;
+        caption?: string | null;
+        id?: string | null;
+      }[]
+    | null;
   background: {
     root: {
       type: string;
@@ -725,6 +732,13 @@ export interface IssuesSelect<T extends boolean = true> {
   status?: T;
   area?: T;
   featuredImage?: T;
+  gallery?:
+    | T
+    | {
+        image?: T;
+        caption?: T;
+        id?: T;
+      };
   background?: T;
   actionsUndertaken?: T;
   progressUpdates?:

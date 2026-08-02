@@ -58,6 +58,15 @@ export default async function IssueDetailPage({
             </span>
           </div>
           <h1 className="mb-2">{issue.title}</h1>
+          {issue.featuredImage &&
+            typeof issue.featuredImage === "object" &&
+            issue.featuredImage.url && (
+              <img
+                src={issue.featuredImage.url}
+                alt={issue.featuredImage.alt ?? ""}
+                className="w-full max-w-2xl rounded-lg shadow mt-4 mb-2"
+              />
+            )}
           {area && (
             <Link
               href={`/areas/${area.slug}`}
@@ -131,6 +140,29 @@ export default async function IssueDetailPage({
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+
+          {Array.isArray(issue.gallery) && issue.gallery.length > 0 && (
+            <div className="mt-10">
+              <h2 className="text-2xl mb-4">Photos</h2>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {issue.gallery.map((item, i) => {
+                  const img =
+                    item.image && typeof item.image === "object" ? item.image : null
+                  if (!img?.url) return null
+                  return (
+                    <figure key={i} className="bg-card rounded-lg shadow-sm overflow-hidden">
+                      <img src={img.url} alt={img.alt ?? item.caption ?? ""} className="w-full" />
+                      {item.caption && (
+                        <figcaption className="text-sm text-muted-foreground p-3">
+                          {item.caption}
+                        </figcaption>
+                      )}
+                    </figure>
+                  )
+                })}
+              </div>
             </div>
           )}
 
