@@ -1,65 +1,100 @@
-import Image from "next/image";
+import Link from "next/link";
+import { getPayloadClient } from "@/lib/payload";
+import { IssueCard } from "@/components/issue-card";
 
-export default function Home() {
+export const revalidate = 60;
+
+export default async function HomePage() {
+  const payload = await getPayloadClient();
+  const [{ docs: issues }, { docs: areas }] = await Promise.all([
+    payload.find({ collection: "issues", limit: 3, sort: "-updatedAt" }),
+    payload.find({ collection: "areas", limit: 9, sort: "name" }),
+  ]);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <>
+      <section
+        className="text-white py-[100px] md:py-[160px]"
+        style={{
+          background:
+            "linear-gradient(rgba(13,43,91,.75), rgba(7,28,61,.85)), linear-gradient(135deg, #00B4DB, #0D2B5B)",
+        }}
+      >
+        <div className="mx-auto w-[min(1280px,92%)]">
+          <h1 className="text-white text-4xl md:text-5xl lg:text-6xl mb-6 max-w-3xl">
+            Working Together for a Better South Coast
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-white/90 text-lg max-w-xl mb-8">
+            Representing residents, property owners and businesses from
+            Likoni to Lunga Lunga since 1983.
+          </p>
+          <Link
+            href="/areas"
+            className="inline-flex items-center justify-center rounded-md bg-white text-primary font-semibold px-7 py-3.5 hover:bg-white/90 transition-colors"
+          >
+            Explore Area Guides
+          </Link>
+        </div>
+      </section>
+
+      <section className="py-24">
+        <div className="mx-auto w-[min(1280px,92%)]">
+          <h2 className="mb-4">About SCRA</h2>
+          <p className="max-w-3xl text-muted-foreground text-lg leading-relaxed">
+            SCRA is a non-political, non-profit, non-denominational and
+            non-racial association advancing the interests of residents and
+            property owners on the South Coast — from Likoni to Lunga Lunga —
+            since 1983.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </section>
+
+      {issues.length > 0 && (
+        <section className="py-24 bg-muted">
+          <div className="mx-auto w-[min(1280px,92%)]">
+            <h2 className="mb-10">Current Issues</h2>
+            <div className="grid gap-8 md:grid-cols-3">
+              {issues.map((issue) => (
+                <IssueCard
+                  key={issue.id}
+                  slug={String(issue.slug)}
+                  title={issue.title}
+                  category={String(issue.category)}
+                  status={String(issue.status)}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      <section className="py-24">
+        <div className="mx-auto w-[min(1280px,92%)]">
+          <div className="flex items-end justify-between mb-10">
+            <h2>Area Guides</h2>
+            <Link
+              href="/areas"
+              className="text-secondary font-medium hover:text-primary transition-colors"
+            >
+              View all →
+            </Link>
+          </div>
+          <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3">
+            {areas.map((area) => (
+              <Link
+                key={area.id}
+                href={`/areas/${area.slug}`}
+                className="block bg-card rounded-lg shadow-sm p-6 hover:-translate-y-1 hover:shadow transition-all"
+              >
+                <h3 className="text-primary text-lg mb-1">{area.name}</h3>
+                <span className="text-sm text-secondary font-medium">
+                  View guide →
+                </span>
+              </Link>
+            ))}
+          </div>
         </div>
-      </main>
-    </div>
+      </section>
+    </>
   );
 }
