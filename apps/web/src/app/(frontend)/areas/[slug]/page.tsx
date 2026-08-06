@@ -33,7 +33,9 @@ export default async function AreaDetailPage({
         className="text-white py-20 md:py-28"
         style={{
           background:
-            "linear-gradient(rgba(13,43,91,.6), rgba(7,28,61,.75)), linear-gradient(135deg, #27C5C3, #0D2B5B)",
+            "linear-gradient(rgba(13,43,91,.72), rgba(7,28,61,.85)), url(/hero/issues.jpg)",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
         }}
       >
         <div className="mx-auto w-[min(1280px,92%)]">

@@ -64,13 +64,21 @@ export default async function EventsIndexPage() {
 
   return (
     <>
-      <section className="bg-muted py-16 md:py-20">
+      <section
+        className="text-white py-16 md:py-20"
+        style={{
+          background:
+            "linear-gradient(rgba(13,43,91,.72), rgba(7,28,61,.85)), url(/hero/issues.jpg)",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
         <div className="mx-auto w-[min(1280px,92%)]">
-          <p className="text-sm font-semibold uppercase tracking-wide text-secondary mb-2">
+          <p className="text-sm font-semibold uppercase tracking-wide text-white/80 mb-2">
             Events
           </p>
-          <h1 className="mb-4">What&apos;s Happening on the South Coast</h1>
-          <p className="max-w-2xl text-muted-foreground text-lg">
+          <h1 className="text-white mb-4">What&apos;s Happening on the South Coast</h1>
+          <p className="max-w-2xl text-white/90 text-lg">
             Public participation meetings, community events, environmental
             activities and committee meetings from SCRA.
           </p>
