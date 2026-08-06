@@ -1,6 +1,6 @@
-import { RichText } from "@payloadcms/richtext-lexical/react";
 import { getPayloadClient } from "@/lib/payload";
 import { roleOrder } from "@/lib/format";
+import { PersonCard } from "@/components/person-card";
 
 export const revalidate = 60;
 
@@ -9,6 +9,7 @@ export default async function LeadershipPage() {
   const { docs: people } = await payload.find({
     collection: "people",
     limit: 100,
+    depth: 1,
   });
 
   const sorted = [...people].sort((a, b) => {
@@ -37,20 +38,23 @@ export default async function LeadershipPage() {
 
       <section className="py-16">
         <div className="mx-auto w-[min(1280px,92%)]">
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {sorted.map((person) => (
-              <div key={person.id} className="bg-card rounded-lg shadow p-8">
-                <h2 className="text-primary text-xl mb-1">{person.name}</h2>
-                <p className="text-secondary font-semibold text-sm mb-4">
-                  {person.role}
-                </p>
-                {person.bio && (
-                  <div className="prose max-w-none text-muted-foreground text-sm [&_p]:mb-3 [&_p]:leading-relaxed">
-                    <RichText data={person.bio} />
-                  </div>
-                )}
-              </div>
-            ))}
+          <div className="grid gap-8 sm:grid-cols-2">
+            {sorted.map((person) => {
+              const photo =
+                person.photo && typeof person.photo === "object"
+                  ? person.photo
+                  : null;
+              return (
+                <PersonCard
+                  key={person.id}
+                  name={person.name}
+                  role={person.role}
+                  photoUrl={photo?.url}
+                  photoAlt={photo?.alt}
+                  bio={person.bio}
+                />
+              );
+            })}
           </div>
         </div>
       </section>

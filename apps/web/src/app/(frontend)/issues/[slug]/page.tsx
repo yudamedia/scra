@@ -39,44 +39,57 @@ export default async function IssueDetailPage({
 
   return (
     <>
-      <section className="bg-muted py-16 md:py-20">
-        <div className="mx-auto w-[min(1280px,92%)] max-w-3xl">
-          <Link
-            href="/issues"
-            className="text-secondary text-sm hover:text-primary transition-colors"
+      {(() => {
+        const heroImg =
+          issue.featuredImage && typeof issue.featuredImage === "object"
+            ? issue.featuredImage
+            : null;
+        const hasImage = Boolean(heroImg?.url);
+        return (
+          <section
+            className={`py-16 md:py-24 ${hasImage ? "text-white" : "bg-muted"}`}
+            style={
+              hasImage
+                ? {
+                    background: `linear-gradient(rgba(13,43,91,.65), rgba(7,28,61,.8)), url(${heroImg!.url})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                  }
+                : undefined
+            }
           >
-            ← All Issues
-          </Link>
-          <div className="flex flex-wrap items-center gap-3 mt-4 mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wide text-secondary">
-              {formatLabel(String(issue.category))}
-            </span>
-            <span
-              className={`inline-block text-xs font-semibold px-3 py-1 rounded-pill ${statusStyles[String(issue.status)] ?? "bg-muted text-muted-foreground"}`}
-            >
-              {formatLabel(String(issue.status))}
-            </span>
-          </div>
-          <h1 className="mb-2">{issue.title}</h1>
-          {issue.featuredImage &&
-            typeof issue.featuredImage === "object" &&
-            issue.featuredImage.url && (
-              <img
-                src={issue.featuredImage.url}
-                alt={issue.featuredImage.alt ?? ""}
-                className="w-full max-w-2xl rounded-lg shadow mt-4 mb-2"
-              />
-            )}
-          {area && (
-            <Link
-              href={`/areas/${area.slug}`}
-              className="text-muted-foreground hover:text-secondary transition-colors text-sm"
-            >
-              Located in {area.name}
-            </Link>
-          )}
-        </div>
-      </section>
+            <div className="mx-auto w-[min(1280px,92%)] max-w-3xl">
+              <Link
+                href="/issues"
+                className={`text-sm transition-colors ${hasImage ? "text-white/80 hover:text-white" : "text-secondary hover:text-primary"}`}
+              >
+                ← All Issues
+              </Link>
+              <div className="flex flex-wrap items-center gap-3 mt-4 mb-3">
+                <span
+                  className={`text-xs font-semibold uppercase tracking-wide ${hasImage ? "text-white" : "text-secondary"}`}
+                >
+                  {formatLabel(String(issue.category))}
+                </span>
+                <span
+                  className={`inline-block text-xs font-semibold px-3 py-1 rounded-pill ${statusStyles[String(issue.status)] ?? "bg-muted text-muted-foreground"}`}
+                >
+                  {formatLabel(String(issue.status))}
+                </span>
+              </div>
+              <h1 className={`mb-2 ${hasImage ? "text-white" : ""}`}>{issue.title}</h1>
+              {area && (
+                <Link
+                  href={`/areas/${area.slug}`}
+                  className={`text-sm transition-colors ${hasImage ? "text-white/80 hover:text-white" : "text-muted-foreground hover:text-secondary"}`}
+                >
+                  Located in {area.name}
+                </Link>
+              )}
+            </div>
+          </section>
+        );
+      })()}
 
       <section className="py-16">
         <div className="mx-auto w-[min(1280px,92%)] max-w-3xl">
@@ -171,8 +184,13 @@ export default async function IssueDetailPage({
               <h2 className="text-2xl mb-4">Related News</h2>
               <ul className="space-y-2">
                 {relatedNews.map((post) => (
-                  <li key={post.id} className="text-muted-foreground">
-                    {post.title}
+                  <li key={post.id}>
+                    <Link
+                      href={`/news/${post.slug}`}
+                      className="text-secondary hover:text-primary transition-colors font-medium"
+                    >
+                      {post.title}
+                    </Link>
                   </li>
                 ))}
               </ul>

@@ -20,6 +20,25 @@ export const directoryCategoryLabels: Record<string, string> = {
   "professional-services": "Professional Services",
 };
 
+export const documentCategoryLabels: Record<string, string> = {
+  "annual-report": "Annual Reports",
+  "meeting-minutes": "Meeting Minutes",
+  "position-paper": "Position Papers",
+  "county-notice": "County Notices",
+  "environmental-resource": "Environmental Resources",
+  "planning-guideline": "Planning Guidelines",
+  "public-participation": "Public Participation Documents",
+  "press-release": "Press Releases",
+};
+
+export const eventTypeLabels: Record<string, string> = {
+  "public-participation": "Public Participation Meeting",
+  "community-event": "Community Event",
+  "environmental-activity": "Environmental Activity",
+  "committee-meeting": "Committee Meeting",
+  "public-notice": "Public Notice",
+};
+
 export const roleOrder = [
   "Chairman",
   "Vice-Chairman",

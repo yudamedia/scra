@@ -1,33 +1,206 @@
-import Link from "next/link";
+"use client";
 
-const navLinks = [
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { ChevronDownIcon, Menu01Icon, Cancel01Icon } from "@hugeicons/core-free-icons";
+
+type NavChild = { href: string; label: string };
+type NavItem = { href: string; label: string; children?: NavChild[] };
+
+const issueCategories: NavChild[] = [
+  { href: "/issues?category=roads-infrastructure", label: "Roads & Infrastructure" },
+  { href: "/issues?category=security", label: "Security" },
+  { href: "/issues?category=water-supply", label: "Water Supply" },
+  { href: "/issues?category=electricity", label: "Electricity" },
+  { href: "/issues?category=waste-management", label: "Waste Management" },
+  { href: "/issues?category=environment", label: "Environment" },
+  { href: "/issues?category=beach-access", label: "Beach Access" },
+  { href: "/issues?category=planning-development", label: "Planning & Development" },
+];
+
+const navLinks: NavItem[] = [
   { href: "/", label: "Home" },
-  { href: "/areas", label: "Area Guides" },
-  { href: "/issues", label: "Issues" },
-  { href: "/directory", label: "Directory" },
-  { href: "/committees", label: "Committees" },
-  { href: "/leadership", label: "Leadership" },
+  {
+    href: "/about",
+    label: "About Us",
+    children: [
+      { href: "/about", label: "About SCRA" },
+      { href: "/leadership", label: "Leadership" },
+      { href: "/committees", label: "Committees" },
+    ],
+  },
+  {
+    href: "/issues",
+    label: "Issues",
+    children: [{ href: "/issues", label: "All Issues" }, ...issueCategories],
+  },
+  {
+    href: "/news",
+    label: "News & Events",
+    children: [
+      { href: "/news", label: "Newsroom" },
+      { href: "/events", label: "Events" },
+    ],
+  },
+  {
+    href: "/documents",
+    label: "Resources",
+    children: [
+      { href: "/documents", label: "Knowledge Centre" },
+      { href: "/directory", label: "Community Directory" },
+      { href: "/areas", label: "Area Guides" },
+    ],
+  },
+  { href: "/membership", label: "Membership" },
+  { href: "/contact", label: "Contact" },
 ];
 
 export function SiteHeader() {
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileSubOpen, setMobileSubOpen] = useState<string | null>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, []);
+
+  function openDropdown(label: string) {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    setOpenMenu(label);
+  }
+
+  function scheduleClose() {
+    closeTimer.current = setTimeout(() => setOpenMenu(null), 150);
+  }
+
   return (
-    <header className="h-[90px] bg-card shadow-sm sticky top-0 z-40 flex items-center">
-      <div className="mx-auto w-[min(1280px,92%)] flex items-center justify-between">
-        <Link href="/" className="font-heading font-bold text-lg text-primary leading-tight">
-          South Coast Residents&apos; Association
+    <header className="bg-card shadow-sm sticky top-0 z-40">
+      <div className="mx-auto w-[min(1280px,92%)] h-[90px] flex items-center justify-between gap-6">
+        <Link href="/" className="flex items-center shrink-0">
+          <img
+            src="/api/media/file/logo-scra.jpg"
+            alt="South Coast Residents' Association"
+            className="h-16 md:h-20 w-auto"
+          />
         </Link>
-        <nav className="flex items-center gap-6">
+
+        <nav className="hidden lg:flex items-center gap-1">
           {navLinks.map((link) => (
-            <Link
+            <div
               key={link.href}
-              href={link.href}
-              className="font-medium text-primary hover:text-secondary transition-colors text-sm"
+              className="relative"
+              onMouseEnter={() => link.children && openDropdown(link.label)}
+              onMouseLeave={() => link.children && scheduleClose()}
             >
-              {link.label}
-            </Link>
+              <Link
+                href={link.href}
+                className="flex items-center gap-1 font-medium text-primary hover:text-secondary transition-colors text-sm px-3 py-2 rounded-md hover:bg-muted"
+                aria-expanded={link.children ? openMenu === link.label : undefined}
+              >
+                {link.label}
+                {link.children && (
+                  <HugeiconsIcon icon={ChevronDownIcon} size={14} strokeWidth={2} />
+                )}
+              </Link>
+              {link.children && openMenu === link.label && (
+                <div className="absolute left-0 top-full pt-2 w-64 z-50">
+                  <div className="bg-card rounded-lg shadow-lg border border-border py-2 grid">
+                    {link.children.map((child) => (
+                      <Link
+                        key={child.href}
+                        href={child.href}
+                        className="px-4 py-2.5 text-sm text-foreground hover:bg-muted hover:text-secondary transition-colors"
+                      >
+                        {child.label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           ))}
         </nav>
+
+        <div className="hidden lg:block shrink-0">
+          <Link
+            href="/membership"
+            className="inline-flex items-center justify-center rounded-md bg-primary text-white font-semibold text-sm px-5 py-2.5 hover:bg-primary-dark transition-colors"
+          >
+            Join / Renew
+          </Link>
+        </div>
+
+        <button
+          type="button"
+          className="lg:hidden text-primary p-2 -mr-2"
+          onClick={() => setMobileOpen((v) => !v)}
+          aria-label={mobileOpen ? "Close menu" : "Open menu"}
+          aria-expanded={mobileOpen}
+        >
+          <HugeiconsIcon icon={mobileOpen ? Cancel01Icon : Menu01Icon} size={26} strokeWidth={2} />
+        </button>
       </div>
+
+      {mobileOpen && (
+        <div className="lg:hidden border-t border-border bg-card max-h-[calc(100vh-90px)] overflow-y-auto">
+          <nav className="mx-auto w-[min(1280px,92%)] py-4 flex flex-col">
+            {navLinks.map((link) => (
+              <div key={link.href} className="border-b border-border last:border-0">
+                <div className="flex items-center justify-between">
+                  <Link
+                    href={link.href}
+                    className="flex-1 py-3 font-medium text-primary text-sm"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    {link.label}
+                  </Link>
+                  {link.children && (
+                    <button
+                      type="button"
+                      className="p-3 text-primary"
+                      onClick={() =>
+                        setMobileSubOpen((v) => (v === link.label ? null : link.label))
+                      }
+                      aria-label={`Toggle ${link.label} submenu`}
+                      aria-expanded={mobileSubOpen === link.label}
+                    >
+                      <HugeiconsIcon
+                        icon={ChevronDownIcon}
+                        size={18}
+                        strokeWidth={2}
+                        className={`transition-transform ${mobileSubOpen === link.label ? "rotate-180" : ""}`}
+                      />
+                    </button>
+                  )}
+                </div>
+                {link.children && mobileSubOpen === link.label && (
+                  <div className="pb-2 pl-4 flex flex-col">
+                    {link.children.map((child) => (
+                      <Link
+                        key={child.href}
+                        href={child.href}
+                        className="py-2 text-sm text-muted-foreground hover:text-secondary transition-colors"
+                        onClick={() => setMobileOpen(false)}
+                      >
+                        {child.label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+            <Link
+              href="/membership"
+              className="mt-4 inline-flex items-center justify-center rounded-md bg-primary text-white font-semibold text-sm px-5 py-3 hover:bg-primary-dark transition-colors"
+              onClick={() => setMobileOpen(false)}
+            >
+              Join / Renew
+            </Link>
+          </nav>
+        </div>
+      )}
     </header>
   );
 }

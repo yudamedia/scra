@@ -1,4 +1,9 @@
+import path from 'path'
+import { fileURLToPath } from 'url'
 import type { CollectionConfig } from 'payload'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 export const Documents: CollectionConfig = {
   slug: 'documents',
@@ -41,7 +46,7 @@ export const Documents: CollectionConfig = {
     },
   ],
   upload: {
-    staticDir: '../documents',
+    staticDir: path.resolve(__dirname, '../../documents'),
     mimeTypes: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
   },
 }
