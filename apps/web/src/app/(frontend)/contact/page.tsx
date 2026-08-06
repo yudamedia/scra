@@ -15,13 +15,21 @@ export const metadata = {
 export default function ContactPage() {
   return (
     <>
-      <section className="bg-muted py-16 md:py-20">
+      <section
+        className="text-white py-16 md:py-20"
+        style={{
+          background:
+            "linear-gradient(rgba(13,43,91,.72), rgba(7,28,61,.85)), url(/hero/homepage.jpg)",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
         <div className="mx-auto w-[min(1280px,92%)]">
-          <p className="text-sm font-semibold uppercase tracking-wide text-secondary mb-2">
+          <p className="text-sm font-semibold uppercase tracking-wide text-white/80 mb-2">
             Contact
           </p>
-          <h1 className="mb-4">Get in Touch</h1>
-          <p className="max-w-2xl text-muted-foreground text-lg">
+          <h1 className="text-white mb-4">Get in Touch</h1>
+          <p className="max-w-2xl text-white/90 text-lg">
             Questions, concerns, or want to get involved? Reach out to SCRA
             using the details below.
           </p>
