@@ -33,7 +33,11 @@ const navLinks: NavItem[] = [
   {
     href: "/issues",
     label: "Issues",
-    children: [{ href: "/issues", label: "All Issues" }, ...issueCategories],
+    children: [
+      { href: "/issues", label: "All Issues" },
+      { href: "/report-issue", label: "Report an Issue" },
+      ...issueCategories,
+    ],
   },
   {
     href: "/news",
@@ -52,7 +56,14 @@ const navLinks: NavItem[] = [
       { href: "/areas", label: "Area Guides" },
     ],
   },
-  { href: "/membership", label: "Membership" },
+  {
+    href: "/membership",
+    label: "Membership",
+    children: [
+      { href: "/membership", label: "Membership Overview" },
+      { href: "/membership/apply", label: "Apply for Membership" },
+    ],
+  },
   { href: "/contact", label: "Contact" },
 ];
 
@@ -123,12 +134,12 @@ export function SiteHeader() {
           ))}
         </nav>
 
-        <div className="hidden lg:block shrink-0">
+        <div className="hidden lg:flex items-center gap-3 shrink-0">
           <Link
-            href="/membership"
+            href="/portal/login"
             className="inline-flex items-center justify-center rounded-md bg-primary text-white font-semibold text-sm px-5 py-2.5 hover:bg-primary-dark transition-colors"
           >
-            Join / Renew
+            Member Login
           </Link>
         </div>
 
@@ -192,11 +203,11 @@ export function SiteHeader() {
               </div>
             ))}
             <Link
-              href="/membership"
+              href="/portal/login"
               className="mt-4 inline-flex items-center justify-center rounded-md bg-primary text-white font-semibold text-sm px-5 py-3 hover:bg-primary-dark transition-colors"
               onClick={() => setMobileOpen(false)}
             >
-              Join / Renew
+              Member Login
             </Link>
           </nav>
         </div>

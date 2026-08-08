@@ -164,6 +164,12 @@ export default async function MembershipPage() {
       <section className="py-16 bg-primary text-white">
         <div className="mx-auto w-[min(1280px,92%)] max-w-3xl">
           <h2 className="text-white mb-6">How to Join or Renew</h2>
+          <Link
+            href="/membership/apply"
+            className="inline-flex items-center justify-center rounded-md bg-white text-primary font-semibold text-sm px-6 py-3 hover:bg-white/90 transition-colors mb-8"
+          >
+            Apply for Membership Online
+          </Link>
           <div className="grid gap-6 sm:grid-cols-2">
             <div className="bg-white/10 rounded-lg p-6">
               <h3 className="text-white text-lg mb-2">Pay In Person</h3>
@@ -176,9 +182,9 @@ export default async function MembershipPage() {
             <div className="bg-white/10 rounded-lg p-6">
               <h3 className="text-white text-lg mb-2">Pay via M-Pesa</h3>
               <p className="text-white/85 text-sm leading-relaxed">
-                Transfer to SCRA Assistant Treasurer Jane Magondu at{" "}
-                <span className="font-semibold">0758 823359</span>, adding
-                the M-Pesa withdrawal fee to your payment.
+                Make a payment via M-Pesa to Paybill Number{" "}
+                <span className="font-semibold">880100</span> with account{" "}
+                <span className="font-semibold">PAYSCRA</span>.
               </p>
             </div>
           </div>

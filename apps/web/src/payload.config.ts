@@ -15,6 +15,9 @@ import { Committees } from './collections/Committees'
 import { People } from './collections/People'
 import { Posts } from './collections/Posts'
 import { Events } from './collections/Events'
+import { Memberships } from './collections/Memberships'
+import { Payments } from './collections/Payments'
+import { IssueReports } from './collections/IssueReports'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -34,6 +37,9 @@ export default buildConfig({
     People,
     Posts,
     Events,
+    Memberships,
+    Payments,
+    IssueReports,
   ],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',

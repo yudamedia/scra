@@ -40,6 +40,16 @@ export const Documents: CollectionConfig = {
       type: 'date',
       required: true,
     },
+    {
+      name: 'visibility',
+      type: 'select',
+      required: true,
+      defaultValue: 'public',
+      options: [
+        { label: 'Public', value: 'public' },
+        { label: 'Members Only', value: 'membersOnly' },
+      ],
+    },
   ],
   upload: {
     staticDir: path.resolve(process.cwd(), 'documents'),

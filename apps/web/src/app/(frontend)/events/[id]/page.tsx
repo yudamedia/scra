@@ -3,8 +3,10 @@ import Link from "next/link";
 import { RichText } from "@payloadcms/richtext-lexical/react";
 import { getPayloadClient } from "@/lib/payload";
 import { eventTypeLabels } from "@/lib/format";
+import { getPortalSession } from "@/lib/portal";
+import { isMembershipActive } from "@/lib/memberships";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Calendar01Icon, Location01Icon } from "@hugeicons/core-free-icons";
+import { Calendar01Icon, Location01Icon, LockIcon } from "@hugeicons/core-free-icons";
 
 export const revalidate = 60;
 
@@ -24,6 +26,8 @@ export default async function EventDetailPage({
 
   if (!event) notFound();
 
+  const { membership } = await getPortalSession();
+  const locked = event.visibility === "membersOnly" && !(membership && isMembershipActive(membership));
   const area = event.area && typeof event.area === "object" ? event.area : null;
   const image = event.image && typeof event.image === "object" ? event.image : null;
   const start = new Date(event.startDate);
@@ -82,10 +86,26 @@ export default async function EventDetailPage({
             )}
           </div>
 
-          {event.description && (
-            <div className="prose max-w-none text-foreground [&_p]:mb-4 [&_p]:leading-relaxed">
-              <RichText data={event.description} />
+          {locked ? (
+            <div className="bg-muted rounded-lg p-8 text-center">
+              <HugeiconsIcon icon={LockIcon} size={24} strokeWidth={1.8} className="text-secondary mx-auto mb-3" />
+              <h2 className="text-lg mb-2">Members Only</h2>
+              <p className="text-muted-foreground text-sm mb-4">
+                Full details for this event are available to active SCRA members.
+              </p>
+              <Link
+                href="/portal/login"
+                className="inline-flex items-center justify-center rounded-md bg-primary text-white font-semibold text-sm px-5 py-2.5 hover:bg-primary-dark transition-colors"
+              >
+                Member Login
+              </Link>
             </div>
+          ) : (
+            event.description && (
+              <div className="prose max-w-none text-foreground [&_p]:mb-4 [&_p]:leading-relaxed">
+                <RichText data={event.description} />
+              </div>
+            )
           )}
 
           {area && (

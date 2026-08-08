@@ -12,6 +12,8 @@ Reference materials live in `~/projects/scra/apps/web/materials/`:
 - `SCRA Design System Stylesheet.md` — full design system (colors, type, spacing, components) as originally specified
 - `DesignSystemlrg.png` — visual reference sheet for the design system (palette swatches, type scale, UI components, imagery style)
 - `scraproposed.png` — a full homepage mockup showing the intended nav structure and page layout
+- `Member_Application_Form.pdf` — the paper Personal/Household/Corporate membership form; source of truth for the `memberships` collection fields (see Member Portal section)
+- `SCRA_2025_as_at_16_06_2025.xlsx` — the real 2025 membership register (241 records); source data for the legacy migration (see Member Portal section)
 
 **Read `scraproposed.png` carefully before building the homepage or nav** — it is the visual target, not a rough guide. Match its section order, nav structure, and layout intent closely, adapting only where real data availability requires it.
 
@@ -73,14 +75,18 @@ Images to use as header background cn be found in ~/projects/scra/apps/web/mater
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
 | `users`             | auth-enabled                                                                                                                                                                                                                                                                                                          | Payload admin login only                                         |
 | `media`             | `alt`, `caption`, image upload                                                                                                                                                                                                                                                                                        | generic image library                                            |
-| `documents`         | `title`, `category` (select), `summary`, `publishedDate`, PDF/doc upload                                                                                                                                                                                                                                              | "Knowledge Centre" source data — **no frontend pages built yet** |
+| `documents`         | `title`, `category` (select), `summary`, `publishedDate`, PDF/doc upload                                                                                                                                                                                                                                              | "Knowledge Centre" source data — **no frontend pages built yet**; needs `visibility` field added (see Member Portal section) |
 | `areas`             | `name`, `slug`, `heroImage`, `overview` (richText), `keyServices` (array), `attractions` (richText)                                                                                                                                                                                                                   |                                                                  |
 | `issues`            | `title`, `slug`, `category`/`status` (select), `area` (relationship), `featuredImage`, `gallery` (array of upload+caption), `background`/`actionsUndertaken` (richText), `progressUpdates` (array: date+update), `supportingDocuments` (relationship→documents, hasMany), `relatedNews` (relationship→posts, hasMany) | most fully-built collection; good reference for patterns         |
 | `directory-entries` | `name`, `category` (select), `area` (relationship), `address`/`phone`/`email`/`website`, `description`                                                                                                                                                                                                                |                                                                  |
 | `committees`        | `name`, `description` (richText)                                                                                                                                                                                                                                                                                      |                                                                  |
-| `people`            | `name`, `role`, `committee` (relationship), `photo` (upload), `bio` (richText)                                                                                                                                                                                                                                        | maps to "Leadership" on frontend                                 |
+| `people`            | `name`, `role`, `committee` (relationship), `photo` (upload), `bio` (richText)                                                                                                                                                                                                                                        | maps to "Leadership" on frontend; **distinct from `memberships` below — do not conflate** |
 | `posts`             | `title`, `slug`, `excerpt`, `featuredImage`, `content` (richText), `relatedIssues` (relationship, hasMany), `publishedDate`                                                                                                                                                                                           | maps to "Newsroom"/"News" on frontend                            |
-| `events`            | `title`, `eventType` (select), `area` (relationship), `startDate`/`endDate`, `location`, `description` (richText), `image` (upload)                                                                                                                                                                                   | **schema exists, zero records, no frontend pages**               |
+| `events`            | `title`, `eventType` (select), `area` (relationship), `startDate`/`endDate`, `location`, `description` (richText), `image` (upload)                                                                                                                                                                                   | **schema exists, zero records, no frontend pages**; needs `visibility` field added (see Member Portal section) |
+| `memberships`       | *(planned, not yet built — see Member Portal section)*                                                                                                                                                                                                                                                                | new collection for Personal/Household/Corporate membership records |
+| `payments`          | *(planned, not yet built — see Member Portal section)*                                                                                                                                                                                                                                                                | new collection for Tuma STK Push + manual reconciliation records |
+| `issue-reports`     | *(planned, not yet built — see Member Portal section)*                                                                                                                                                                                                                                                                | new collection — resident-submitted reports, distinct from curated `issues` |
+
 
 Rich text is Lexical. Render with `<RichText data={field} />` from `@payloadcms/richtext-lexical/react`. Seed scripts build Lexical JSON via a helper at `src/seed/lexical.ts` (`toLexicalRichText(plainText)`).
 
@@ -141,9 +147,159 @@ Full spec is in `materials/SCRA Design System Stylesheet.md`; the **implemented*
 - **`/directory` page reliability was never conclusively re-confirmed** after a stray duplicate `[slug]` route (see Gotcha #1) was found and deleted late in the previous session. Load-test it and the rest of the site for any similar orphaned/duplicate route files before building further.
 - No frontend pages exist yet for `documents` (Knowledge Centre) or `events`, despite both having live schemas (and 17 real records for `documents`).
 - No pages exist yet for About Us, Membership, or Contact — these are core to this phase's goal.
-- Better Auth is fully wired (env vars, schema, route handler, verified working via `/api/auth/get-session`) but has zero UI — no sign-up/login pages exist.
+- Better Auth is fully wired (env vars, schema, route handler, verified working via `/api/auth/get-session`) but has zero UI — no sign-up/login pages exist. **Do not build generic sign-up UI** — account creation is gated to "only after a Tuma payment confirms" per the Member Portal section below, not a normal open registration form.
 
-## Commands reference
+## Member Portal, Payments & Related Modules (planned — not yet implemented)
+
+This section is planning output, not yet built. Nothing below exists in the codebase yet. It's
+settled enough to build from, but verify against the live schema before assuming any field name is
+final if this section and the actual code ever disagree — the code wins.
+
+### `memberships` collection (new)
+
+Replaces the paper Personal/Household/Renewal and Corporate forms (see
+`materials/Member_Application_Form.pdf`). **Distinct from `people`** — `people` is committee/leadership
+bios, `memberships` is paying-member records.
+
+| Field | Type | Notes |
+|---|---|---|
+| `membershipNumber` | string, unique | Preserve legacy numbering exactly, including zero-padding (`"003"`, `"099"`). New signups get the next available number as a plain string. |
+| `type` | enum: `personal \| household \| corporate \| free` | `free` = exempted legacy members. |
+| *(active/expired)* | **computed, not stored** | Active = `!adminRevoked && expiryDate >= today`. Don't add a separate stored status field — it will drift out of sync with `expiryDate`. |
+| `adminRevoked` | boolean, default false | Manual override, independent of expiry. |
+| `revokedReason` | text, optional | Admin-only. |
+| `primaryContact` | group: `surname`, `firstName`, `phone`, `email` | `email` optional at DB level (legacy imports may lack one) but required for any new portal signup. |
+| `postalAddress`, `town`, `postalCode` | text | |
+| `corporateBusinessName` | text, conditional on `type = corporate` | |
+| `additionalMembers` | array of `{ surname, firstName, phone?, email? }` | Household: names only (paper form doesn't collect contact info for additional household members). Corporate: up to 4, each with own phone/email. |
+| `subscriptionAmount` | number | Stored per-record, not just derived from `type`, so future rate changes don't rewrite history. |
+| `expiryDate` | date | Single source of truth for active/expired. Legacy imports: `2026-12-31` for all. New/renewed: `paymentConfirmedDate + 365 days`. |
+| `importStatus` | enum: `native \| imported` | |
+| `importFlags` | text (free text) | Carries anything ambiguous from the source spreadsheet forward for admin review rather than silently interpreting it. |
+| `linkedAuthUsers` | relationship (array) → Better Auth `auth` schema users | Populated only once an account actually exists (see Account Creation below). |
+
+### `payments` collection (new)
+
+| Field | Type | Notes |
+|---|---|---|
+| `membership` | relationship → `memberships` | |
+| `amount` | number | |
+| `method` | enum: `stk_push \| bank_transfer \| cash \| other` | |
+| `provider` | enum: `tuma \| manual` | |
+| `tumaPaymentId` | string, nullable | From Tuma's STK push response. |
+| `paymentStatus` | enum: `pending \| confirmed \| failed` | |
+| `confirmedAt` | datetime, nullable | |
+| `confirmedBy` | relationship → `users`, nullable | Null if confirmed by webhook; set if secretariat manually reconciled it. |
+| `rawWebhookPayload` | json, nullable | Raw Tuma callback body, for audit/debugging. |
+| `paymentType` | enum: `new \| renewal` | |
+
+**Critical**: webhook-confirmed and manually-reconciled payments must call the *same* underlying
+activation function (confirm → extend `expiryDate` → provision `linkedAuthUsers`). Don't let the two
+paths diverge. Webhook handler must check `paymentStatus !== 'confirmed'` before acting — Tuma
+callbacks can arrive late, twice, or (rarely) not at all.
+
+### Tuma payment integration (www.tuma.co.ke)
+
+- Auth: email + API key → JWT. **Server-side only, never exposed to the client.**
+- STK Push: `POST /payment/stk-push` with amount, phone, description, `callback_url` → returns `payment_id`.
+- Callback is async — Tuma calls our `callback_url` on its own schedule, this is not a synchronous
+  response. Frontend polls or subscribes for status; don't assume an immediate answer.
+- New route: `/api/webhooks/tuma` — verifies payload, updates matching `payments` record, calls the
+  shared activation function.
+- Bank transfer/cash uses the same activation function via a manual admin action (`provider = manual`).
+
+### Better Auth — Member Portal accounts
+
+- Keep tables isolated in the `auth` Postgres schema (existing gotcha #3 above — do not change).
+- **Account creation only after payment is confirmed.** No credential is ever collected at
+  application time.
+- Personal/household → one account (primary contact). Corporate → up to 4, one per named member with
+  a valid email.
+- New accounts get a "set your password"/magic-link invite email (same mechanism as legacy migration
+  claim emails below — one email system, not two).
+- **Route guard**: any protected portal route checks the linked membership's `expiryDate` first. If
+  lapsed, redirect straight to `/renew` — no partial access. Account/profile and renewal pages stay
+  reachable.
+
+### `documents` and `events` — add `visibility` field
+
+Both collections need a new field: `visibility` — enum `public | membersOnly`, default `public`.
+Per-record toggle, secretariat discretion (not a blanket rule per collection).
+
+Access-control gap: Payload's built-in access functions only know Payload's own `users` collection,
+not Better Auth sessions. A `membersOnly` document/event can't rely on Payload's normal read check.
+Needs a dedicated route: `/api/documents/[id]/download` — checks Better Auth session + membership
+`expiryDate`, then streams the file or issues a short-lived signed URL. `public` documents keep
+serving from Payload's normal media URL, no extra hop.
+
+Events: decided **informational-only for v1** — no RSVP, no attendee tracking, no recurring-event
+support. `visibility` reuses the same pattern.
+
+### `issue-reports` collection (new)
+
+Distinct from curated `issues` (committee-authored). `issue-reports` is resident-submitted raw input,
+optionally linkable to a curated `issues` page so its "Progress updates" can reflect real report
+volume. **Open to any resident, membership optional** — logged-in members get status tracking/
+notifications, anonymous reporters get a reference code.
+
+| Field | Type | Notes |
+|---|---|---|
+| `referenceCode` | string, auto-generated, unique | e.g. `SCRA-2847`. How anonymous reporters check status without an account. |
+| `reporterName`, `reporterPhone`, `reporterEmail` | text | Always captured regardless of login state. |
+| `reportedBy` | relationship → Better Auth user, nullable | Set only if logged in at submission. |
+| `category` | enum: `roads \| security \| street_lighting \| illegal_development \| environmental \| other` | |
+| `description` | text | |
+| `photos` | array of media | |
+| `location` | group: `lat`, `lng`, `addressText` | Real coordinates from day one — needed for the future map layer. |
+| `status` | enum: `received \| under_review \| in_progress \| resolved` | Matches progress stepper in `DesignSystemlrg.png`. |
+| `statusHistory` | array of `{ status, changedAt, changedBy, note }` | Audit trail; powers reporter-facing timeline. |
+| `linkedIssue` | relationship → `issues`, nullable | |
+
+### Renewal reminder emails
+
+- Cadence: 30 days before expiry, 7 days before, on the day, then a distinct "lapsed" nudge after.
+- Idempotency: track last-sent state per membership so a cron re-run doesn't double-send.
+- **Burst-send note**: all migrated legacy records share the identical `2026-12-31` expiry, so the
+  first reminder wave fires simultaneously rather than trickling in — check email provider rate
+  limits against this.
+- Delivery: Vercel Cron Job, **once daily** — confirmed compatible with the project's current Vercel
+  Hobby plan (Hobby caps cron at once/day with up to ~1hr timing drift; irrelevant for a daily digest
+  job checking date-offset windows). Route handler queries memberships in each reminder window and
+  fires the batch.
+- Reuses the same email provider as the Better Auth invite/claim emails — one system.
+
+### Legacy data migration (2025 spreadsheet)
+
+Source: `SCRA_2025_as_at_16_06_2025.xlsx`, sheet **"2025 Members (2)"** (confirmed authoritative —
+more complete/alphabetically full than sheet "2025 Members," which was a partial cut). **241 primary
+membership records** (322 rows incl. household/corporate sub-members).
+
+- Membership numbers preserved exactly as strings, including zero-padding.
+- 8 duplicate-number collisions found and resolved during planning:
+  - Round 1 (incomplete side flagged "Details update" in source notes → read as pending/misassigned): Cronchey Christina → `459`, Winfred Deborah → `460`, Ashtel Aninah → `461`.
+  - Round 2 (both/all sides fully populated, no data-driven signal → resolved alphabetically by surname, first-alphabetically keeps the original number): `#202` Matiba Susan keeps `202`, Van Niekerk Esme → `462`. `#342` Huth Valentina keeps `342`, Stone Gillian → `463`. `#414` Genevier Chrisme keeps `414`, Midi Agnes → `464`, Soprani Andrea → `465`. Flag these five in `importFlags` as reassigned-by-tiebreak, not verified fact — sanity-check with secretariat if any of them ever raise a question about their number.
+- Every legacy record gets `expiryDate = 2026-12-31` regardless of original join date.
+- **No accounts auto-created for any imported record**, even with a clean email — consistent with
+  the "account only after confirmed payment" rule above. Records with an email get a "claim your
+  portal account" invite instead. The subset with no email on file (~43 records) stay data-only;
+  their first portal payment doubles as account creation.
+- Source `AMOUNT`/`NOTES` columns mix real numeric partial payments, status text ("Paid in Nov",
+  "Exempted," "Not paid"), and blanks — **do not auto-map to a structured paid-amount field**. Carry
+  forward as free text in `importFlags` for secretariat review.
+- Seed script follows the existing `src/seed/` pattern (Payload Local API, `pnpm payload run`,
+  excluded from TS checking).
+
+### Map (two distinct builds, sequenced)
+
+1. **Static area/service map** (build first, data mostly exists already): sources `areas`,
+   `directory-entries`, curated `issues` with a location. Matches the marker categories in
+   `scraproposed.png`'s homepage mock (road projects, community facilities, healthcare, schools,
+   environmental areas).
+2. **Live issue-report heatmap** (build second, near-free once #1 and `issue-reports` exist): plots
+   `issue-reports` pins, filterable by category/status. Depends on `issue-reports.location` being
+   real lat/lng, already specified above.
+
+
 
 ```bash
 # from ~/projects/scra

@@ -77,6 +77,9 @@ export interface Config {
     people: Person;
     posts: Post;
     events: Event;
+    memberships: Membership;
+    payments: Payment;
+    'issue-reports': IssueReport;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -94,6 +97,9 @@ export interface Config {
     people: PeopleSelect<false> | PeopleSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
     events: EventsSelect<false> | EventsSelect<true>;
+    memberships: MembershipsSelect<false> | MembershipsSelect<true>;
+    payments: PaymentsSelect<false> | PaymentsSelect<true>;
+    'issue-reports': IssueReportsSelect<false> | IssueReportsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -225,6 +231,7 @@ export interface Document {
     | 'press-release';
   summary?: string | null;
   publishedDate: string;
+  visibility: 'public' | 'membersOnly';
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -497,6 +504,166 @@ export interface Event {
     [k: string]: unknown;
   } | null;
   image?: (number | null) | Media;
+  visibility: 'public' | 'membersOnly';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Active/expired status is computed from expiryDate + adminRevoked, not stored here.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "memberships".
+ */
+export interface Membership {
+  id: number;
+  /**
+   * Auto-assigned on create if left blank. Legacy numbers preserve exact zero-padding.
+   */
+  membershipNumber?: string | null;
+  type: 'personal' | 'household' | 'corporate' | 'free';
+  /**
+   * Manual override, independent of expiryDate.
+   */
+  adminRevoked?: boolean | null;
+  revokedReason?: string | null;
+  primaryContact: {
+    surname: string;
+    firstName?: string | null;
+    phone?: string | null;
+    /**
+     * Optional for legacy imports; required for any new portal signup.
+     */
+    email?: string | null;
+  };
+  postalAddress?: string | null;
+  town?: string | null;
+  postalCode?: string | null;
+  corporateBusinessName?: string | null;
+  /**
+   * Household: names only. Corporate: up to 4, each may carry its own phone/email for a linked portal account.
+   */
+  additionalMembers?:
+    | {
+        surname: string;
+        firstName?: string | null;
+        phone?: string | null;
+        email?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Stored per-record so future rate changes do not rewrite history.
+   */
+  subscriptionAmount?: number | null;
+  /**
+   * Single source of truth for active/expired.
+   */
+  expiryDate: string;
+  importStatus: 'native' | 'imported';
+  /**
+   * Free text for anything ambiguous carried forward from a source import, for secretariat review.
+   */
+  importFlags?: string | null;
+  /**
+   * Better Auth users live in a separate Postgres schema outside Payload's collection registry, so this can't be a native relationship field. Populated only once an account actually exists.
+   */
+  linkedAuthUsers?:
+    | {
+        authUserId: string;
+        email: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Idempotency marker for the renewal-reminder cron — not a status field.
+   */
+  lastReminderStage?: ('none' | '30day' | '7day' | 'dueday' | 'lapsed') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payments".
+ */
+export interface Payment {
+  id: number;
+  membership: number | Membership;
+  amount: number;
+  method: 'stk_push' | 'bank_transfer' | 'cash' | 'other';
+  provider: 'tuma' | 'manual';
+  /**
+   * From Tuma's STK push response.
+   */
+  tumaPaymentId?: string | null;
+  paymentStatus: 'pending' | 'confirmed' | 'failed';
+  confirmedAt?: string | null;
+  /**
+   * Null if confirmed by webhook; set if secretariat manually reconciled it.
+   */
+  confirmedBy?: (number | null) | User;
+  /**
+   * Raw Tuma callback body, for audit/debugging.
+   */
+  rawWebhookPayload?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  paymentType: 'new' | 'renewal';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "issue-reports".
+ */
+export interface IssueReport {
+  id: number;
+  /**
+   * Auto-generated (e.g. SCRA-2847). How anonymous reporters check status without an account.
+   */
+  referenceCode?: string | null;
+  reporterName: string;
+  reporterPhone?: string | null;
+  reporterEmail?: string | null;
+  /**
+   * Better Auth user id, set only if logged in at submission — not a Payload relationship, since Better Auth users live in a separate schema.
+   */
+  reportedBy?: string | null;
+  category: 'roads' | 'security' | 'street_lighting' | 'illegal_development' | 'environmental' | 'other';
+  description: string;
+  photos?:
+    | {
+        image: number | Media;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Real coordinates captured from day one for the future map layer.
+   */
+  location?: {
+    lat?: number | null;
+    lng?: number | null;
+    addressText?: string | null;
+  };
+  status: 'received' | 'under_review' | 'in_progress' | 'resolved';
+  /**
+   * Audit trail powering the reporter-facing timeline.
+   */
+  statusHistory?:
+    | {
+        status: 'received' | 'under_review' | 'in_progress' | 'resolved';
+        changedAt: string;
+        changedBy?: (number | null) | User;
+        note?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  linkedIssue?: (number | null) | Issue;
   updatedAt: string;
   createdAt: string;
 }
@@ -563,6 +730,18 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'events';
         value: number | Event;
+      } | null)
+    | ({
+        relationTo: 'memberships';
+        value: number | Membership;
+      } | null)
+    | ({
+        relationTo: 'payments';
+        value: number | Payment;
+      } | null)
+    | ({
+        relationTo: 'issue-reports';
+        value: number | IssueReport;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -690,6 +869,7 @@ export interface DocumentsSelect<T extends boolean = true> {
   category?: T;
   summary?: T;
   publishedDate?: T;
+  visibility?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
@@ -820,6 +1000,109 @@ export interface EventsSelect<T extends boolean = true> {
   location?: T;
   description?: T;
   image?: T;
+  visibility?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "memberships_select".
+ */
+export interface MembershipsSelect<T extends boolean = true> {
+  membershipNumber?: T;
+  type?: T;
+  adminRevoked?: T;
+  revokedReason?: T;
+  primaryContact?:
+    | T
+    | {
+        surname?: T;
+        firstName?: T;
+        phone?: T;
+        email?: T;
+      };
+  postalAddress?: T;
+  town?: T;
+  postalCode?: T;
+  corporateBusinessName?: T;
+  additionalMembers?:
+    | T
+    | {
+        surname?: T;
+        firstName?: T;
+        phone?: T;
+        email?: T;
+        id?: T;
+      };
+  subscriptionAmount?: T;
+  expiryDate?: T;
+  importStatus?: T;
+  importFlags?: T;
+  linkedAuthUsers?:
+    | T
+    | {
+        authUserId?: T;
+        email?: T;
+        id?: T;
+      };
+  lastReminderStage?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payments_select".
+ */
+export interface PaymentsSelect<T extends boolean = true> {
+  membership?: T;
+  amount?: T;
+  method?: T;
+  provider?: T;
+  tumaPaymentId?: T;
+  paymentStatus?: T;
+  confirmedAt?: T;
+  confirmedBy?: T;
+  rawWebhookPayload?: T;
+  paymentType?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "issue-reports_select".
+ */
+export interface IssueReportsSelect<T extends boolean = true> {
+  referenceCode?: T;
+  reporterName?: T;
+  reporterPhone?: T;
+  reporterEmail?: T;
+  reportedBy?: T;
+  category?: T;
+  description?: T;
+  photos?:
+    | T
+    | {
+        image?: T;
+        id?: T;
+      };
+  location?:
+    | T
+    | {
+        lat?: T;
+        lng?: T;
+        addressText?: T;
+      };
+  status?: T;
+  statusHistory?:
+    | T
+    | {
+        status?: T;
+        changedAt?: T;
+        changedBy?: T;
+        note?: T;
+        id?: T;
+      };
+  linkedIssue?: T;
   updatedAt?: T;
   createdAt?: T;
 }

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getPayloadClient } from "@/lib/payload";
 import { eventTypeLabels } from "@/lib/format";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Calendar01Icon, Location01Icon } from "@hugeicons/core-free-icons";
+import { Calendar01Icon, Location01Icon, LockIcon } from "@hugeicons/core-free-icons";
 
 export const revalidate = 60;
 
@@ -37,9 +37,17 @@ export default async function EventsIndexPage() {
           </span>
         </div>
         <div className="min-w-0">
-          <span className="text-xs font-semibold uppercase tracking-wide text-secondary">
-            {eventTypeLabels[String(event.eventType)] ?? String(event.eventType)}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wide text-secondary">
+              {eventTypeLabels[String(event.eventType)] ?? String(event.eventType)}
+            </span>
+            {event.visibility === "membersOnly" && (
+              <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-pill bg-primary/10 text-primary">
+                <HugeiconsIcon icon={LockIcon} size={11} strokeWidth={2} />
+                Members Only
+              </span>
+            )}
+          </div>
           <h3 className="text-primary text-lg mt-1 mb-1">{event.title}</h3>
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
             <span className="flex items-center gap-1.5">

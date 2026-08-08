@@ -64,5 +64,15 @@ export const Events: CollectionConfig = {
       type: 'upload',
       relationTo: 'media',
     },
+    {
+      name: 'visibility',
+      type: 'select',
+      required: true,
+      defaultValue: 'public',
+      options: [
+        { label: 'Public', value: 'public' },
+        { label: 'Members Only', value: 'membersOnly' },
+      ],
+    },
   ],
 }

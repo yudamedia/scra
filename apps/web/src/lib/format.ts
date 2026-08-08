@@ -39,6 +39,35 @@ export const eventTypeLabels: Record<string, string> = {
   "public-notice": "Public Notice",
 };
 
+export const membershipTypeLabels: Record<string, string> = {
+  personal: "Personal",
+  household: "Household",
+  corporate: "Corporate",
+  free: "Free (Exempted)",
+};
+
+export const paymentStatusStyles: Record<string, string> = {
+  pending: "bg-muted text-muted-foreground",
+  confirmed: "bg-success/15 text-success",
+  failed: "bg-destructive/15 text-destructive",
+};
+
+export const issueReportCategoryLabels: Record<string, string> = {
+  roads: "Roads",
+  security: "Security",
+  street_lighting: "Street Lighting",
+  illegal_development: "Illegal Development",
+  environmental: "Environmental",
+  other: "Other",
+};
+
+export const issueReportStatusStyles: Record<string, string> = {
+  received: "bg-muted text-muted-foreground",
+  under_review: "bg-warning/15 text-warning",
+  in_progress: "bg-secondary/15 text-secondary",
+  resolved: "bg-success/15 text-success",
+};
+
 export const roleOrder = [
   "Chairman",
   "Vice-Chairman",

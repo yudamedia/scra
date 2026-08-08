@@ -19,7 +19,9 @@ const resourceLinks = [
   { href: "/documents", label: "Knowledge Centre" },
   { href: "/directory", label: "Community Directory" },
   { href: "/areas", label: "Area Guides" },
-  { href: "/membership", label: "Membership" },
+  { href: "/report-issue", label: "Report an Issue" },
+  { href: "/membership/apply", label: "Apply for Membership" },
+  { href: "/portal/login", label: "Member Login" },
   { href: "/contact", label: "Contact Us" },
 ];
 
