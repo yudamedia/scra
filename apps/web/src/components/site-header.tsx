@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ChevronDownIcon, Menu01Icon, Cancel01Icon } from "@hugeicons/core-free-icons";
+import { authClient } from "@/lib/auth-client";
 
 type NavChild = { href: string; label: string };
 type NavItem = { href: string; label: string; children?: NavChild[] };
@@ -72,10 +74,18 @@ export function SiteHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileSubOpen, setMobileSubOpen] = useState<string | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const router = useRouter();
+  const { data: session } = authClient.useSession();
 
   useEffect(() => {
     setMobileOpen(false);
   }, []);
+
+  async function handleSignOut() {
+    await authClient.signOut();
+    router.push("/");
+    router.refresh();
+  }
 
   function openDropdown(label: string) {
     if (closeTimer.current) clearTimeout(closeTimer.current);
@@ -135,12 +145,22 @@ export function SiteHeader() {
         </nav>
 
         <div className="hidden lg:flex items-center gap-3 shrink-0">
-          <Link
-            href="/portal/login"
-            className="inline-flex items-center justify-center rounded-md bg-primary text-white font-semibold text-sm px-5 py-2.5 hover:bg-primary-dark transition-colors"
-          >
-            Member Login
-          </Link>
+          {session ? (
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="inline-flex items-center justify-center rounded-md bg-primary text-white font-semibold text-sm px-5 py-2.5 hover:bg-primary-dark transition-colors"
+            >
+              Logout
+            </button>
+          ) : (
+            <Link
+              href="/portal/login"
+              className="inline-flex items-center justify-center rounded-md bg-primary text-white font-semibold text-sm px-5 py-2.5 hover:bg-primary-dark transition-colors"
+            >
+              Member Login
+            </Link>
+          )}
         </div>
 
         <button
@@ -202,13 +222,26 @@ export function SiteHeader() {
                 )}
               </div>
             ))}
-            <Link
-              href="/portal/login"
-              className="mt-4 inline-flex items-center justify-center rounded-md bg-primary text-white font-semibold text-sm px-5 py-3 hover:bg-primary-dark transition-colors"
-              onClick={() => setMobileOpen(false)}
-            >
-              Member Login
-            </Link>
+            {session ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileOpen(false);
+                  handleSignOut();
+                }}
+                className="mt-4 inline-flex items-center justify-center rounded-md bg-primary text-white font-semibold text-sm px-5 py-3 hover:bg-primary-dark transition-colors"
+              >
+                Logout
+              </button>
+            ) : (
+              <Link
+                href="/portal/login"
+                className="mt-4 inline-flex items-center justify-center rounded-md bg-primary text-white font-semibold text-sm px-5 py-3 hover:bg-primary-dark transition-colors"
+                onClick={() => setMobileOpen(false)}
+              >
+                Member Login
+              </Link>
+            )}
           </nav>
         </div>
       )}

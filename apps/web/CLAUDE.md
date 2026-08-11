@@ -141,6 +141,8 @@ Full spec is in `materials/SCRA Design System Stylesheet.md`; the **implemented*
 
 10. Both `(frontend)` and `(payload)` are **separate root layouts** (Next.js's multiple-root-layouts pattern) — each defines its own `<html>`/`<body>`. Don't try to unify them under a single top-level `app/layout.tsx`.
 
+11. **A standing, non-expiring Member Portal sign-in link exists for one hardcoded test account only** (membership #466, `yudamedia@gmail.com`) — see `src/lib/portal-test-login.ts`, registered as a Better Auth plugin in `src/lib/auth.ts`. It's a `GET /api/auth/portal-test-login?token=...` endpoint gated by the `PORTAL_TEST_LOGIN_SECRET` env var (gitignored `.env` only, never committed); the target email is hardcoded in the plugin, not derived from the request, so the token can never be used to sign in as anyone else. Functionally equivalent to a permanent password for that one account — keep the token out of chat logs, tickets, and git history. Disable by removing the env var; rotate by changing it. Cookie/session max-age is capped at 400 days (RFC/browser ceiling), but the link itself never expires and can be revisited to mint a fresh 400-day session at any time.
+
 ## Known issues to fix or verify
 
 - 

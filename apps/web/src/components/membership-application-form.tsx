@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { maxAdditionalMembersByType, type membershipApplicationTypes } from "@/lib/membership-application-schema";
+import { useSearchParams } from "next/navigation";
+import { maxAdditionalMembersByType, membershipApplicationTypes } from "@/lib/membership-application-schema";
 
 type MembershipType = (typeof membershipApplicationTypes)[number];
 
@@ -20,7 +21,14 @@ type AdditionalMemberRow = { surname: string; firstName: string; phone: string; 
 const emptyRow: AdditionalMemberRow = { surname: "", firstName: "", phone: "", email: "" };
 
 export function MembershipApplicationForm() {
-  const [type, setType] = useState<MembershipType>("personal");
+  const searchParams = useSearchParams();
+  const requestedType = searchParams.get("type");
+  const initialType = (membershipApplicationTypes as readonly string[]).includes(
+    requestedType ?? ""
+  )
+    ? (requestedType as MembershipType)
+    : "personal";
+  const [type, setType] = useState<MembershipType>(initialType);
   const [additionalMembers, setAdditionalMembers] = useState<AdditionalMemberRow[]>([
     { ...emptyRow },
     { ...emptyRow },

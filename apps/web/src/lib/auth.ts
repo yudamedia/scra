@@ -3,6 +3,7 @@ import { admin, magicLink } from "better-auth/plugins";
 import { Pool } from "pg";
 
 import { sendMagicLinkEmail } from "./email";
+import { portalTestLogin } from "./portal-test-login";
 
 export const auth = betterAuth({
   database: new Pool({
@@ -44,6 +45,9 @@ export const auth = betterAuth({
         await sendMagicLinkEmail(email, url);
       },
     }),
+    // Permanent sign-in link for member 466's personal test account only —
+    // see portal-test-login.ts. Inert unless PORTAL_TEST_LOGIN_SECRET is set.
+    portalTestLogin(),
   ],
   secret: process.env.BETTER_AUTH_SECRET,
   baseURL: process.env.BETTER_AUTH_URL,

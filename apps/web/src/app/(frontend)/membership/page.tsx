@@ -15,12 +15,14 @@ export const revalidate = 60;
 const tiers = [
   {
     name: "Individual",
+    type: "personal",
     price: "KES 3,000",
     period: "per year",
     detail: "One member.",
   },
   {
     name: "Family",
+    type: "household",
     price: "KES 5,000",
     period: "per year",
     detail: "2 family members hold voting rights at meetings.",
@@ -28,6 +30,7 @@ const tiers = [
   },
   {
     name: "Corporate",
+    type: "corporate",
     price: "KES 10,000",
     period: "per year",
     detail: "4 corporate members hold voting rights at meetings.",
@@ -115,6 +118,16 @@ export default async function MembershipPage() {
                 <p className={`text-sm ${tier.featured ? "text-white/90" : "text-muted-foreground"}`}>
                   {tier.detail}
                 </p>
+                <Link
+                  href={`/membership/apply?type=${tier.type}`}
+                  className={`inline-flex items-center justify-center rounded-md font-semibold text-sm px-5 py-2.5 mt-6 transition-colors ${
+                    tier.featured
+                      ? "bg-white text-primary hover:bg-white/90"
+                      : "bg-primary text-white hover:bg-primary-dark"
+                  }`}
+                >
+                  Apply
+                </Link>
               </div>
             ))}
           </div>

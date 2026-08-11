@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { MembershipApplicationForm } from "@/components/membership-application-form";
 
 export default function MembershipApplyPage() {
@@ -14,7 +15,9 @@ export default function MembershipApplyPage() {
           with a link to sign in to the Member Portal, no password required.
         </p>
 
-        <MembershipApplicationForm />
+        <Suspense fallback={null}>
+          <MembershipApplicationForm />
+        </Suspense>
 
         <div className="bg-primary text-white rounded-lg p-6 mt-8">
           <h2 className="text-white text-lg mb-4">Payment Details</h2>

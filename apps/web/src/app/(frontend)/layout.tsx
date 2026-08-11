@@ -3,6 +3,7 @@ import { Poppins, Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { PortalTopbar } from "@/components/portal-topbar";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -38,6 +39,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <SiteHeader />
+        <PortalTopbar />
         <main className="flex-1">{children}</main>
         <SiteFooter />
       </body>
