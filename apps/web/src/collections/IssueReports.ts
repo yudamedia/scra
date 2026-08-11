@@ -1,5 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
+import { sendIssueStatusChangedEmail } from '../lib/email'
+
 async function nextReferenceCode(payload: import('payload').Payload): Promise<string> {
   const { docs } = await payload.find({
     collection: 'issue-reports',
@@ -36,6 +38,22 @@ export const IssueReports: CollectionConfig = {
           data.referenceCode = await nextReferenceCode(req.payload)
         }
         return data
+      },
+    ],
+    afterChange: [
+      async ({ doc, previousDoc, operation }) => {
+        if (operation === 'update' && previousDoc && previousDoc.status !== doc.status && doc.reporterEmail) {
+          const latestNote = [...(doc.statusHistory ?? [])].reverse().find((entry) => entry.status === doc.status)
+            ?.note
+
+          await sendIssueStatusChangedEmail(doc.reporterEmail, {
+            name: doc.reporterName,
+            referenceCode: doc.referenceCode,
+            status: doc.status,
+            note: latestNote,
+          }).catch((err) => console.error('[email] issue status changed notification failed:', err))
+        }
+        return doc
       },
     ],
   },

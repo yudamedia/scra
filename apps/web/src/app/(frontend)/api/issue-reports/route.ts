@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { getPayloadClient } from "@/lib/payload";
 import { issueReportSchema } from "@/lib/issue-report-schema";
 import { auth } from "@/lib/auth";
+import { sendIssueReportConfirmationEmail } from "@/lib/email";
 
 const MAX_PHOTOS = 3;
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
@@ -83,6 +84,14 @@ export async function POST(req: NextRequest) {
       statusHistory: [{ status: "received", changedAt: new Date().toISOString() }],
     },
   });
+
+  if (data.reporterEmail) {
+    await sendIssueReportConfirmationEmail(data.reporterEmail, {
+      name: data.reporterName,
+      referenceCode: report.referenceCode!,
+      category: data.category,
+    }).catch((err) => console.error("[email] issue report confirmation failed:", err));
+  }
 
   return NextResponse.json({ ok: true, referenceCode: report.referenceCode });
 }

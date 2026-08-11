@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getPayloadClient } from "@/lib/payload";
 import { membershipApplicationSchema } from "@/lib/membership-application-schema";
 import { subscriptionAmountForType } from "@/lib/memberships";
+import { sendMembershipApplicationConfirmationEmail } from "@/lib/email";
 
 const MIN_FILL_TIME_MS = 3000;
 
@@ -71,6 +72,14 @@ export async function POST(req: NextRequest) {
       paymentType: "new",
     },
   });
+
+  await sendMembershipApplicationConfirmationEmail(data.email, {
+    name: `${data.firstName} ${data.surname}`,
+    membershipNumber: membership.membershipNumber!,
+    type: data.type,
+    amount: subscriptionAmountForType[data.type],
+    paymentMethod: data.paymentMethod,
+  }).catch((err) => console.error("[email] membership application confirmation failed:", err));
 
   return NextResponse.json({ ok: true, membershipNumber: membership.membershipNumber });
 }

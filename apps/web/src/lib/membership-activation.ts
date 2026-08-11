@@ -2,6 +2,7 @@ import type { PayloadRequest } from 'payload'
 import type { Payment } from '../payload-types'
 
 import { auth } from './auth'
+import { sendPaymentConfirmedEmail } from './email'
 
 type Contact = {
   surname: string
@@ -35,6 +36,18 @@ export async function activateMembership({ payment, req }: { payment: Payment; r
 
   const confirmedAt = payment.confirmedAt ? new Date(payment.confirmedAt) : new Date()
   const newExpiryDate = addDays(confirmedAt, 365).toISOString()
+
+  const primaryEmail = membership.primaryContact.email?.trim()
+  if (primaryEmail) {
+    await sendPaymentConfirmedEmail(primaryEmail, {
+      name: `${membership.primaryContact.firstName ?? ''} ${membership.primaryContact.surname}`.trim(),
+      membershipNumber: membership.membershipNumber ?? '',
+      type: membership.type,
+      amount: payment.amount,
+      expiryDate: newExpiryDate,
+      paymentType: payment.paymentType,
+    }).catch((err) => console.error('[email] payment confirmed notification failed:', err))
+  }
 
   const contacts: Contact[] =
     membership.type === 'corporate'
