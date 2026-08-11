@@ -4,6 +4,7 @@ import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { PortalTopbar } from "@/components/portal-topbar";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -42,6 +43,7 @@ export default function RootLayout({
         <PortalTopbar />
         <main className="flex-1">{children}</main>
         <SiteFooter />
+        <SpeedInsights />
       </body>
     </html>
   );
