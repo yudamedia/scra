@@ -17,13 +17,13 @@ Reference materials live in `~/projects/scra/apps/web/materials/`:
 
 **Read `scraproposed.png` carefully before building the homepage or nav** — it is the visual target, not a rough guide. Match its section order, nav structure, and layout intent closely, adapting only where real data availability requires it.
 
-Images to use as header background cn be found in ~/projects/scra/apps/web/materials/images 
+Images to use as header background cn be found in ~/projects/scra/apps/web/materials/images
 
 ## Immediate goals for this phase
 
 1. **Full navigation menu** matching the structure implied by `scraproposed.png` and `project-synopsis.md`'s information architecture (Home, About Us, Issues, News & Events, Resources, Membership, Contact — likely with dropdowns for sub-pages). The current nav (`src/components/site-header.tsx`) is a flat list of only 6 links and needs to be replaced/expanded.
 2. **Homepage rebuild** to match `scraproposed.png`'s layout: hero, quick-link icon row, news/updates cards, "issues we're working on" cards, membership CTA banner, upcoming events + map row, footer with quick links and social icons. The current homepage (`src/app/(frontend)/page.tsx`) is a simpler first pass and should be treated as a working draft, not a fixed foundation.
-3. **New About Us content/pages** — "About SCRA", possibly "Membership" and "Contact" as their own pages. Draft this content from `project-synopsis.md` (brand purpose, mission) and the organizational facts already seeded in Payload (see Content State below), not invented. Where a fact isn't available anywhere, flag it for the client rather than inventing it — see the "Known issues" section below for an example of this going wrong previously.
+3. ~~**New About Us content/pages**~~ — done: `/about`, `/membership`, `/membership/apply`, and `/contact` all exist. Where a fact wasn't available anywhere, it was flagged rather than invented — see the "Known issues" section below for the historical example of this going wrong.
 
 ## Tech stack
 
@@ -32,7 +32,8 @@ Images to use as header background cn be found in ~/projects/scra/apps/web/mater
 - **shadcn/ui** — Base UI primitives, "Maia" preset, icon library `hugeicons`. Only `button` was ever formally installed via the CLI; most UI in this project is hand-rolled Tailwind rather than shadcn components, by deliberate choice (see Gotchas)
 - **Payload CMS 3.87.0** — installed **manually** (not via `create-payload-app`), runs inside the Next.js app via `withPayload()` in `next.config.ts`
 - **PostgreSQL 16** — via Docker (`docker-compose.yml` at repo root, service `postgres`, container `scra_postgres`)
-- **Better Auth 1.x** — installed but **no UI built yet**; wired for a future Member Portal, fully separate from Payload's admin auth
+- **Better Auth 1.6.25** — powers the live Member Portal (magic-link sign-in, admin plugin, portal test-login plugin), fully separate from Payload's admin auth. Tables live in a dedicated `auth` Postgres schema (gotcha #3).
+- **Resend** — transactional email (magic links, payment/application confirmations, renewal reminders, issue-report status updates). See `src/lib/email.ts`.
 - **pnpm 11.18.0**
 
 ## Directory structure
@@ -71,22 +72,21 @@ Images to use as header background cn be found in ~/projects/scra/apps/web/mater
 
 ## Content model (Payload collections)
 
-| Collection          | Key fields                                                                                                                                                                                                                                                                                                            | Notes                                                            |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `users`             | auth-enabled                                                                                                                                                                                                                                                                                                          | Payload admin login only                                         |
-| `media`             | `alt`, `caption`, image upload                                                                                                                                                                                                                                                                                        | generic image library                                            |
-| `documents`         | `title`, `category` (select), `summary`, `publishedDate`, PDF/doc upload                                                                                                                                                                                                                                              | "Knowledge Centre" source data — **no frontend pages built yet**; needs `visibility` field added (see Member Portal section) |
-| `areas`             | `name`, `slug`, `heroImage`, `overview` (richText), `keyServices` (array), `attractions` (richText)                                                                                                                                                                                                                   |                                                                  |
-| `issues`            | `title`, `slug`, `category`/`status` (select), `area` (relationship), `featuredImage`, `gallery` (array of upload+caption), `background`/`actionsUndertaken` (richText), `progressUpdates` (array: date+update), `supportingDocuments` (relationship→documents, hasMany), `relatedNews` (relationship→posts, hasMany) | most fully-built collection; good reference for patterns         |
-| `directory-entries` | `name`, `category` (select), `area` (relationship), `address`/`phone`/`email`/`website`, `description`                                                                                                                                                                                                                |                                                                  |
-| `committees`        | `name`, `description` (richText)                                                                                                                                                                                                                                                                                      |                                                                  |
-| `people`            | `name`, `role`, `committee` (relationship), `photo` (upload), `bio` (richText)                                                                                                                                                                                                                                        | maps to "Leadership" on frontend; **distinct from `memberships` below — do not conflate** |
-| `posts`             | `title`, `slug`, `excerpt`, `featuredImage`, `content` (richText), `relatedIssues` (relationship, hasMany), `publishedDate`                                                                                                                                                                                           | maps to "Newsroom"/"News" on frontend                            |
-| `events`            | `title`, `eventType` (select), `area` (relationship), `startDate`/`endDate`, `location`, `description` (richText), `image` (upload)                                                                                                                                                                                   | **schema exists, zero records, no frontend pages**; needs `visibility` field added (see Member Portal section) |
-| `memberships`       | *(planned, not yet built — see Member Portal section)*                                                                                                                                                                                                                                                                | new collection for Personal/Household/Corporate membership records |
-| `payments`          | *(planned, not yet built — see Member Portal section)*                                                                                                                                                                                                                                                                | new collection for Tuma STK Push + manual reconciliation records |
-| `issue-reports`     | *(planned, not yet built — see Member Portal section)*                                                                                                                                                                                                                                                                | new collection — resident-submitted reports, distinct from curated `issues` |
-
+| Collection          | Key fields                                                                                                                                                                                                                                                                                                            | Notes                                                                                                                        |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `users`             | auth-enabled                                                                                                                                                                                                                                                                                                          | Payload admin login only                                                                                                     |
+| `media`             | `alt`, `caption`, image upload                                                                                                                                                                                                                                                                                        | generic image library                                                                                                        |
+| `documents`         | `title`, `category` (select), `summary`, `publishedDate`, `visibility` (select: `public`/`membersOnly`, default `public`), PDF/doc upload                                                                                                                                                                            | "Knowledge Centre" — live at `/documents`; `membersOnly` docs gate through `/api/documents/[id]/download` (see Member Portal section). `Documents.access.read` is still `() => true` at the Payload level — enforcement is at the download-route layer, not the collection API |
+| `areas`             | `name`, `slug`, `heroImage`, `overview` (richText), `keyServices` (array), `attractions` (richText)                                                                                                                                                                                                                   |                                                                                                                              |
+| `issues`            | `title`, `slug`, `category`/`status` (select), `area` (relationship), `featuredImage`, `gallery` (array of upload+caption), `background`/`actionsUndertaken` (richText), `progressUpdates` (array: date+update), `supportingDocuments` (relationship→documents, hasMany), `relatedNews` (relationship→posts, hasMany) | most fully-built collection; good reference for patterns                                                                     |
+| `directory-entries` | `name`, `category` (select), `area` (relationship), `address`/`phone`/`email`/`website`, `description`                                                                                                                                                                                                                |                                                                                                                              |
+| `committees`        | `name`, `description` (richText)                                                                                                                                                                                                                                                                                      |                                                                                                                              |
+| `people`            | `name`, `role`, `committee` (relationship), `photo` (upload), `bio` (richText)                                                                                                                                                                                                                                        | maps to "Leadership" on frontend; **distinct from `memberships` below — do not conflate**                                    |
+| `posts`             | `title`, `slug`, `excerpt`, `featuredImage`, `content` (richText), `relatedIssues` (relationship, hasMany), `publishedDate`                                                                                                                                                                                           | maps to "Newsroom"/"News" on frontend                                                                                        |
+| `events`            | `title`, `eventType` (select), `area` (relationship), `startDate`/`endDate`, `location`, `description` (richText), `image` (upload), `visibility` (select: `public`/`membersOnly`, default `public`)                                                                                                                | live at `/events` + `/events/[id]`; informational only (no RSVP/attendee tracking) — zero real records still, schema/pages ready |
+| `memberships`       | `membershipNumber` (unique, auto-assigned), `type` (select), `adminRevoked`, `revokedReason`, `primaryContact` (group), `postalAddress`/`town`/`postalCode`, `corporateBusinessName`, `additionalMembers` (array), `subscriptionAmount`, `expiryDate`, `importStatus`, `importFlags`, `linkedAuthUsers` (array, not a real relationship), `lastReminderStage` | paying-member records — **distinct from `people`** (committee/leadership bios); see Member Portal section |
+| `payments`          | `membership` (relationship), `amount`, `method`, `provider`, `tumaPaymentId`, `paymentStatus`, `confirmedAt`, `confirmedBy` (relationship→users), `rawWebhookPayload` (json), `paymentType`                                                                                                                          | `afterChange` hook on `paymentStatus` → `confirmed` calls the shared `activateMembership()`; see Member Portal section       |
+| `issue-reports`     | `referenceCode` (auto, unique), reporter fields, `reportedBy` (text, Better Auth user id), `category`, `description`, `photos` (array), `location` (group), `status`, `statusHistory` (array), `linkedIssue` (relationship→issues)                                                                                  | resident-submitted reports, distinct from curated `issues`; public form at `/report-issue`; see Member Portal section        |
 
 Rich text is Lexical. Render with `<RichText data={field} />` from `@payloadcms/richtext-lexical/react`. Seed scripts build Lexical JSON via a helper at `src/seed/lexical.ts` (`toLexicalRichText(plainText)`).
 
@@ -106,6 +106,17 @@ All seeded content is **real, sourced material** — either scraped/paraphrased 
 - **Users**: 1 (Payload admin)
 
 Seed scripts (`src/seed/run*.ts`) are idempotent (upsert by slug/name/filename) and safe to inspect for the patterns used — but **do not treat them as the final content-authoring mechanism**. They were a means to bulk-load real historical data; new pages going forward should generally be authored through the Payload admin panel unless bulk-loading another real data source.
+
+## File storage (Cloudflare R2)
+
+`media` and `documents` uploads are stored in Cloudflare R2, not local disk — required because Vercel's filesystem is ephemeral and uploads wouldn't survive a redeploy otherwise. Wired via `@payloadcms/storage-s3@3.87.0` (R2 is S3-compatible; there's no R2-specific Payload package) in two separate `s3Storage()` plugin instances in `payload.config.ts`, since the plugin's `bucket` option is a single string per instance — you cannot split two collections across two buckets in one call.
+
+- **`scra-media`** — public bucket, custom S3 endpoint credentials, served via `R2_MEDIA_PUBLIC_URL` (currently the `pub-*.r2.dev` dev URL; **swap for a real Custom Domain before launch** — Cloudflare explicitly flags the dev URL as rate-limited and not for production).
+- **`scra-documents`** — private bucket, `signedDownloads: true`, so every read is proxied through Payload's own route and gets a short-lived signed URL rather than a raw public bucket URL.
+- Both buckets: same Cloudflare account (`R2_ACCOUNT_ID`), one scoped API token with Object Read & Write on just these two buckets (not account-wide, not Admin).
+- Env vars (local `.env` + Vercel Production/Preview): `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_MEDIA_BUCKET`, `R2_DOCUMENTS_BUCKET`, `R2_MEDIA_PUBLIC_URL`.
+
+**Known gap:** `Documents.access.read` is still `() => true` — the `visibility` field (`public` / `membersOnly`) is enforced only at the app layer, by `/api/documents/[id]/download` (checks `getPortalSession()` + `isMembershipActive()` before streaming the file), not by Payload's own collection access control. `signedDownloads`/`shouldUseSignedURL` still isn't wired to that check either. This means a `membersOnly` document is still fetchable through Payload's raw REST/GraphQL API or `doc.url` if someone finds it directly — the frontend (`/documents` page) never links to that raw URL for `membersOnly` docs, but the collection-level hole itself hasn't been closed.
 
 ## Design system reference
 
@@ -143,165 +154,102 @@ Full spec is in `materials/SCRA Design System Stylesheet.md`; the **implemented*
 
 11. **A standing, non-expiring Member Portal sign-in link exists for one hardcoded test account only** (membership #466, `yudamedia@gmail.com`) — see `src/lib/portal-test-login.ts`, registered as a Better Auth plugin in `src/lib/auth.ts`. It's a `GET /api/auth/portal-test-login?token=...` endpoint gated by the `PORTAL_TEST_LOGIN_SECRET` env var (gitignored `.env` only, never committed); the target email is hardcoded in the plugin, not derived from the request, so the token can never be used to sign in as anyone else. Functionally equivalent to a permanent password for that one account — keep the token out of chat logs, tickets, and git history. Disable by removing the env var; rotate by changing it. Cookie/session max-age is capped at 400 days (RFC/browser ceiling), but the link itself never expires and can be revisited to mint a fresh 400-day session at any time.
 
+12. **Cloudflare R2 rejects the CRC32 checksums `@aws-sdk/client-s3` sends by default** since SDK v3.729.0 — without `requestChecksumCalculation: 'WHEN_REQUIRED'` and `responseChecksumValidation: 'WHEN_REQUIRED'` in the S3 client `config`, every R2 read/write fails with a generic, unhelpful `S3ServiceException: UnknownError`. Both `s3Storage()` instances in `payload.config.ts` already have this set — don't remove it. See https://developers.cloudflare.com/r2/examples/aws/aws-sdk-js-v3/.
+
+13. **R2 access key ID and secret access key are easy to swap by mistake** when copying from the Cloudflare dashboard — they're stacked close together in the UI. Access key ID is 32 hex characters; secret access key is 64. If R2 uploads fail with `Credential access key has length 64, should be 32`, they've been pasted into the wrong env vars.
+
+14. **Production has two entirely separate migration systems that must both be run — neither covers the other.** Payload's Postgres adapter only auto-syncs schema (the "Pulling schema from database..." push you see in `pnpm dev`) in non-production `NODE_ENV`; production requires real migration files. This bit once already: a full session's worth of new collections/columns (`memberships`, `payments`, `issue-reports`, `documents.visibility`, `events.visibility`) never reached production and broke the build with `column "visibility" does not exist` on `/about`. Fixed by hand-pruning an auto-generated `payload migrate:create` output down to just the true incremental diff (see `src/migrations/20260808_023123_initial_migration.ts` — the file header explains why it's hand-pruned, not auto-generated verbatim) and adding `"vercel-build": "payload migrate && next build"` to `package.json`. **This only covers Payload's own schema.** Better Auth's schema (in the separate `auth` Postgres schema, gotcha #3) is migrated independently via `npx @better-auth/cli migrate` and is *not* invoked by `vercel-build` — after adding/changing anything in `src/lib/auth.ts` (e.g. the `admin` plugin's `role`/`banned`/`banReason`/`banExpires` columns), that command must be run by hand against production's `DATABASE_URI` too, or Member Portal auth breaks at runtime with no build-time warning. Also confirm Vercel's Build Command is actually set to `pnpm run vercel-build` — Vercel does not necessarily auto-detect a non-default script name.
+
 ## Known issues to fix or verify
 
-- 
 - **`/directory` page reliability was never conclusively re-confirmed** after a stray duplicate `[slug]` route (see Gotcha #1) was found and deleted late in the previous session. Load-test it and the rest of the site for any similar orphaned/duplicate route files before building further.
-- No frontend pages exist yet for `documents` (Knowledge Centre) or `events`, despite both having live schemas (and 17 real records for `documents`).
-- No pages exist yet for About Us, Membership, or Contact — these are core to this phase's goal.
-- Better Auth is fully wired (env vars, schema, route handler, verified working via `/api/auth/get-session`) but has zero UI — no sign-up/login pages exist. **Do not build generic sign-up UI** — account creation is gated to "only after a Tuma payment confirms" per the Member Portal section below, not a normal open registration form.
+- **`Documents.access.read` doesn't enforce `visibility`** — see the R2 section's "Known gap" above. The download route gates the app's own UI correctly; the collection's own API access control does not.
+- **Vercel build WARNs that `media` and `documents` have no storage adapter for uploads on Vercel** — this is about local filesystem uploads via the admin UI, not the R2 wiring itself (R2 is correctly configured via `s3Storage()` in `payload.config.ts`); confirm this warning is actually spurious (R2 already covers it) before spending time on it, don't assume it's a real gap.
+- **Production deploys require two separate migration steps, not one** — see Gotcha #14. Forgetting the Better Auth one is easy to do since it produces no build-time error, only runtime auth failures.
 
-## Member Portal, Payments & Related Modules (planned — not yet implemented)
+## Member Portal, Payments & Related Modules (implemented — Tuma live calls still scaffolded)
 
-This section is planning output, not yet built. Nothing below exists in the codebase yet. It's
-settled enough to build from, but verify against the live schema before assuming any field name is
-final if this section and the actual code ever disagree — the code wins.
+Everything described in this section is built and working, except the actual Tuma HTTP calls
+(gated behind env vars, see below) and the map (still pending, sequenced last). Field names below
+are believed current as of this writing, but **the code wins if this section and the actual
+collection configs ever disagree** — check `src/collections/*.ts` for ground truth.
 
-### `memberships` collection (new)
+### `memberships` collection — `src/collections/Memberships.ts`
 
-Replaces the paper Personal/Household/Renewal and Corporate forms (see
-`materials/Member_Application_Form.pdf`). **Distinct from `people`** — `people` is committee/leadership
-bios, `memberships` is paying-member records.
+Replaces the paper Personal/Household/Corporate forms (`materials/Member_Application_Form.pdf`).
+**Distinct from `people`** — `people` is committee/leadership bios, `memberships` is paying-member
+records. Fields match the Content Model table above. Notable implementation choices:
 
-| Field | Type | Notes |
-|---|---|---|
-| `membershipNumber` | string, unique | Preserve legacy numbering exactly, including zero-padding (`"003"`, `"099"`). New signups get the next available number as a plain string. |
-| `type` | enum: `personal \| household \| corporate \| free` | `free` = exempted legacy members. |
-| *(active/expired)* | **computed, not stored** | Active = `!adminRevoked && expiryDate >= today`. Don't add a separate stored status field — it will drift out of sync with `expiryDate`. |
-| `adminRevoked` | boolean, default false | Manual override, independent of expiry. |
-| `revokedReason` | text, optional | Admin-only. |
-| `primaryContact` | group: `surname`, `firstName`, `phone`, `email` | `email` optional at DB level (legacy imports may lack one) but required for any new portal signup. |
-| `postalAddress`, `town`, `postalCode` | text | |
-| `corporateBusinessName` | text, conditional on `type = corporate` | |
-| `additionalMembers` | array of `{ surname, firstName, phone?, email? }` | Household: names only (paper form doesn't collect contact info for additional household members). Corporate: up to 4, each with own phone/email. |
-| `subscriptionAmount` | number | Stored per-record, not just derived from `type`, so future rate changes don't rewrite history. |
-| `expiryDate` | date | Single source of truth for active/expired. Legacy imports: `2026-12-31` for all. New/renewed: `paymentConfirmedDate + 365 days`. |
-| `importStatus` | enum: `native \| imported` | |
-| `importFlags` | text (free text) | Carries anything ambiguous from the source spreadsheet forward for admin review rather than silently interpreting it. |
-| `linkedAuthUsers` | relationship (array) → Better Auth `auth` schema users | Populated only once an account actually exists (see Account Creation below). |
+- **Active/expired is computed, never stored** — `isMembershipActive()` in `src/lib/memberships.ts`: `!adminRevoked && expiryDate >= today`.
+- **`membershipNumber` auto-assignment** is a `beforeChange` hook (`getNextMembershipNumber()`, same file) — finds the current max numeric value across all records and increments, padded to at least 3 digits. Fires identically whether a membership is created by the public application form, the legacy seed script, or directly in the admin.
+- **`linkedAuthUsers` is a plain `array` of `{ authUserId, email }`, not a real Payload `relationship`** — Better Auth's users live in the separate `auth` Postgres schema, outside Payload's collection registry, so the relationship field type can't target them. Read-only in the admin; populated only by `activateMembership()`.
+- **`lastReminderStage`** (`none | 30day | 7day | dueday | lapsed`) — idempotency marker for the renewal cron, not a status field; doesn't conflict with the "don't store active/expired" rule above since it tracks reminder cadence, not membership state.
 
-### `payments` collection (new)
+### `payments` collection — `src/collections/Payments.ts`
 
-| Field | Type | Notes |
-|---|---|---|
-| `membership` | relationship → `memberships` | |
-| `amount` | number | |
-| `method` | enum: `stk_push \| bank_transfer \| cash \| other` | |
-| `provider` | enum: `tuma \| manual` | |
-| `tumaPaymentId` | string, nullable | From Tuma's STK push response. |
-| `paymentStatus` | enum: `pending \| confirmed \| failed` | |
-| `confirmedAt` | datetime, nullable | |
-| `confirmedBy` | relationship → `users`, nullable | Null if confirmed by webhook; set if secretariat manually reconciled it. |
-| `rawWebhookPayload` | json, nullable | Raw Tuma callback body, for audit/debugging. |
-| `paymentType` | enum: `new \| renewal` | |
+Fields match the Content Model table above. **The shared activation path is an `afterChange` hook**, not a function called separately from two route handlers: whenever `paymentStatus` transitions to `confirmed` (checked against `previousDoc`), the hook calls `activateMembership()` from `src/lib/membership-activation.ts`. Both the Tuma webhook route and a secretariat admin edit ultimately do a `payload.update()` on a `payments` record, so they are structurally guaranteed to hit the same code path — there is no way for them to drift apart.
 
-**Critical**: webhook-confirmed and manually-reconciled payments must call the *same* underlying
-activation function (confirm → extend `expiryDate` → provision `linkedAuthUsers`). Don't let the two
-paths diverge. Webhook handler must check `paymentStatus !== 'confirmed'` before acting — Tuma
-callbacks can arrive late, twice, or (rarely) not at all.
+`activateMembership({ payment, req })` takes the already-written payment doc and the hook's `req` — not a payment ID to re-fetch. This matters: a payment created already-`confirmed` in one step (not created-pending-then-updated) is a row that hasn't committed yet outside its own transaction, and a `findByID` without `req` would 404 on it. This was a real production bug (member 466's payment record failing with "Not Found") — fixed by threading `req` through every Payload call in the activation function so everything stays in the same transaction. **Don't remove the `req` threading.**
 
-### Tuma payment integration (www.tuma.co.ke)
+`activateMembership()` also: extends `expiryDate` by 365 days from `confirmedAt`, provisions Better Auth accounts for any contact with an email not already in `linkedAuthUsers` (primary contact for personal/household; up to 4 contacts — primary + `additionalMembers` — for corporate), and sends a payment-confirmed email via Resend.
 
-- Auth: email + API key → JWT. **Server-side only, never exposed to the client.**
-- STK Push: `POST /payment/stk-push` with amount, phone, description, `callback_url` → returns `payment_id`.
-- Callback is async — Tuma calls our `callback_url` on its own schedule, this is not a synchronous
-  response. Frontend polls or subscribes for status; don't assume an immediate answer.
-- New route: `/api/webhooks/tuma` — verifies payload, updates matching `payments` record, calls the
-  shared activation function.
-- Bank transfer/cash uses the same activation function via a manual admin action (`provider = manual`).
+### Tuma payment integration (www.tuma.co.ke) — `src/lib/tuma.ts`, scaffolded, not live
 
-### Better Auth — Member Portal accounts
+Real function signatures matching Tuma's documented API are wired up (`createSTKPush()`, `verifyWebhookSignature()`, JWT auth flow via `/auth/login`), but the actual `fetch()` calls are gated behind `TUMA_API_KEY`/`TUMA_API_EMAIL` and throw a clear "Tuma integration not yet configured" error while those env vars are unset. The webhook route (`src/app/(frontend)/api/webhooks/tuma/route.ts`) is fully wired: verifies an HMAC-SHA256 signature (scheme not yet confirmed against a real Tuma callback — flagged in the code), finds the matching `payments` record by `tumaPaymentId`, and does a plain `payload.update({ paymentStatus: 'confirmed', ... })` — the `Payments` hook takes it from there. Explicitly guards `paymentStatus !== 'confirmed'` before acting, since Tuma callbacks can arrive late, twice, or not at all.
 
-- Keep tables isolated in the `auth` Postgres schema (existing gotcha #3 above — do not change).
-- **Account creation only after payment is confirmed.** No credential is ever collected at
-  application time.
-- Personal/household → one account (primary contact). Corporate → up to 4, one per named member with
-  a valid email.
-- New accounts get a "set your password"/magic-link invite email (same mechanism as legacy migration
-  claim emails below — one email system, not two).
-- **Route guard**: any protected portal route checks the linked membership's `expiryDate` first. If
-  lapsed, redirect straight to `/renew` — no partial access. Account/profile and renewal pages stay
-  reachable.
+**Manual reconciliation works today without Tuma**: the public membership application (`/membership/apply`) and the portal renewal flow (`/portal/renew`) both create a `payments` record with `provider: 'manual'`, `paymentStatus: 'pending'`, and instructions to pay via M-Pesa Paybill **880100**, account **PAYSCRA** (or cash at the Safarilink Office, Diani). Secretariat confirms the payment by editing the record in the admin — same hook fires.
 
-### `documents` and `events` — add `visibility` field
+### Better Auth — Member Portal accounts — `src/lib/auth.ts`
 
-Both collections need a new field: `visibility` — enum `public | membersOnly`, default `public`.
-Per-record toggle, secretariat discretion (not a blanket rule per collection).
+- Tables isolated in the `auth` Postgres schema (gotcha #3) — unchanged.
+- `emailAndPassword` stays `enabled: true` (Better Auth needs the credential provider registered) but `disableSignUp: true` closes the public `/api/auth/sign-up/email` route.
+- **Passwordless, magic-link-only accounts**: the `admin` plugin's `auth.api.createUser({ body: { email, name } })` creates a user with no password, from `activateMembership()` only — never from any public route. The `magicLink` plugin (`disableSignUp: true`) is the only sign-in path; a magic-link request for an email with no pre-existing account never provisions one.
+- `sendMagicLinkEmail()` (Resend, `src/lib/email.ts`) fires on every login, not just the first — there's no separate "set your password" email since there's never a password.
+- **A standing, non-expiring test login exists for one hardcoded account** — see gotcha #11 (`src/lib/portal-test-login.ts`).
 
-Access-control gap: Payload's built-in access functions only know Payload's own `users` collection,
-not Better Auth sessions. A `membersOnly` document/event can't rely on Payload's normal read check.
-Needs a dedicated route: `/api/documents/[id]/download` — checks Better Auth session + membership
-`expiryDate`, then streams the file or issues a short-lived signed URL. `public` documents keep
-serving from Payload's normal media URL, no extra hop.
+Frontend routes under `src/app/(frontend)/portal/`:
+- `login/page.tsx` — email input, calls `authClient.signIn.magicLink()`.
+- `(authenticated)/layout.tsx` — redirects to `/portal/login` if no Better Auth session.
+- `(authenticated)/account/page.tsx` — profile view, reachable even with a lapsed membership.
+- `(authenticated)/renew/page.tsx` — manual-reconciliation renewal flow (M-Pesa/bank/cash instructions + a disabled "coming soon" Tuma STK button), also reachable while lapsed.
+- `(authenticated)/(protected)/layout.tsx` — nested layout enforcing an *active* membership (`isMembershipActive()`, not just a session); redirects to `/portal/renew` if lapsed or unlinked. Wraps a placeholder dashboard at `(protected)/page.tsx`.
 
-Events: decided **informational-only for v1** — no RSVP, no attendee tracking, no recurring-event
-support. `visibility` reuses the same pattern.
+The header's primary CTA (`src/components/site-header.tsx`, both desktop and mobile) is "Member Login" → `/portal/login`, swapping to a "Logout" button when a session exists.
 
-### `issue-reports` collection (new)
+### Public membership application — `/membership/apply`
 
-Distinct from curated `issues` (committee-authored). `issue-reports` is resident-submitted raw input,
-optionally linkable to a curated `issues` page so its "Progress updates" can reflect real report
-volume. **Open to any resident, membership optional** — logged-in members get status tracking/
-notifications, anonymous reporters get a reference code.
+The no-login-required sign-up path (`materials/Member_Application_Form.pdf` digitized). `src/components/membership-application-form.tsx` (client) posts to `src/app/(frontend)/api/membership-applications/route.ts`, validated both sides by `src/lib/membership-application-schema.ts`. Creates a `pending` `memberships` record (type `personal|household|corporate`; `expiryDate` set to "now" as a placeholder — the activation hook sets the real one once payment is confirmed) plus a `manual`/`pending` `payments` record, and emails a confirmation via `sendMembershipApplicationConfirmationEmail()`.
 
-| Field | Type | Notes |
-|---|---|---|
-| `referenceCode` | string, auto-generated, unique | e.g. `SCRA-2847`. How anonymous reporters check status without an account. |
-| `reporterName`, `reporterPhone`, `reporterEmail` | text | Always captured regardless of login state. |
-| `reportedBy` | relationship → Better Auth user, nullable | Set only if logged in at submission. |
-| `category` | enum: `roads \| security \| street_lighting \| illegal_development \| environmental \| other` | |
-| `description` | text | |
-| `photos` | array of media | |
-| `location` | group: `lat`, `lng`, `addressText` | Real coordinates from day one — needed for the future map layer. |
-| `status` | enum: `received \| under_review \| in_progress \| resolved` | Matches progress stepper in `DesignSystemlrg.png`. |
-| `statusHistory` | array of `{ status, changedAt, changedBy, note }` | Audit trail; powers reporter-facing timeline. |
-| `linkedIssue` | relationship → `issues`, nullable | |
+**Additional-member caps** (`maxAdditionalMembersByType` in the schema file, enforced via `.superRefine()` server-side and by slicing the rendered/submitted rows client-side): personal → 0, household ("Family") → **1** (2 members total, matching the paper form), corporate → 3 (4 total). Spam prevention is a honeypot field + a minimum 3-second fill-time check (`MIN_FILL_TIME_MS`) — no CAPTCHA, matching the project's "nothing exists yet, keep it simple" posture elsewhere.
 
-### Renewal reminder emails
+Nav: "Membership" is a header dropdown ("Membership Overview" / "Apply for Membership"); the footer also links directly to `/membership/apply`.
 
-- Cadence: 30 days before expiry, 7 days before, on the day, then a distinct "lapsed" nudge after.
-- Idempotency: track last-sent state per membership so a cron re-run doesn't double-send.
-- **Burst-send note**: all migrated legacy records share the identical `2026-12-31` expiry, so the
-  first reminder wave fires simultaneously rather than trickling in — check email provider rate
-  limits against this.
-- Delivery: Vercel Cron Job, **once daily** — confirmed compatible with the project's current Vercel
-  Hobby plan (Hobby caps cron at once/day with up to ~1hr timing drift; irrelevant for a daily digest
-  job checking date-offset windows). Route handler queries memberships in each reminder window and
-  fires the batch.
-- Reuses the same email provider as the Better Auth invite/claim emails — one system.
+### `documents` and `events` — `visibility` field
 
-### Legacy data migration (2025 spreadsheet)
+Both collections have `visibility: 'public' | 'membersOnly'` (default `public`), toggled per-record by secretariat discretion. Payload's built-in access functions only know Payload's own `users` collection, not Better Auth sessions, so a `membersOnly` document can't rely on Payload's normal read check — see the R2 section's "Known gap" above for the current state of that enforcement (app-layer only, via `/api/documents/[id]/download`; collection-level API access is still `() => true`). Events have no file to gate, so `membersOnly` events just get a lock badge/redirect-to-login treatment on `/events` and `/events/[id]` — informational-only, no RSVP/attendee tracking, per the original v1 decision.
 
-Source: `SCRA_2025_as_at_16_06_2025.xlsx`, sheet **"2025 Members (2)"** (confirmed authoritative —
-more complete/alphabetically full than sheet "2025 Members," which was a partial cut). **241 primary
-membership records** (322 rows incl. household/corporate sub-members).
+### `issue-reports` collection — `src/collections/IssueReports.ts`
 
-- Membership numbers preserved exactly as strings, including zero-padding.
-- 8 duplicate-number collisions found and resolved during planning:
-  - Round 1 (incomplete side flagged "Details update" in source notes → read as pending/misassigned): Cronchey Christina → `459`, Winfred Deborah → `460`, Ashtel Aninah → `461`.
-  - Round 2 (both/all sides fully populated, no data-driven signal → resolved alphabetically by surname, first-alphabetically keeps the original number): `#202` Matiba Susan keeps `202`, Van Niekerk Esme → `462`. `#342` Huth Valentina keeps `342`, Stone Gillian → `463`. `#414` Genevier Chrisme keeps `414`, Midi Agnes → `464`, Soprani Andrea → `465`. Flag these five in `importFlags` as reassigned-by-tiebreak, not verified fact — sanity-check with secretariat if any of them ever raise a question about their number.
-- Every legacy record gets `expiryDate = 2026-12-31` regardless of original join date.
-- **No accounts auto-created for any imported record**, even with a clean email — consistent with
-  the "account only after confirmed payment" rule above. Records with an email get a "claim your
-  portal account" invite instead. The subset with no email on file (~43 records) stay data-only;
-  their first portal payment doubles as account creation.
-- Source `AMOUNT`/`NOTES` columns mix real numeric partial payments, status text ("Paid in Nov",
-  "Exempted," "Not paid"), and blanks — **do not auto-map to a structured paid-amount field**. Carry
-  forward as free text in `importFlags` for secretariat review.
-- Seed script follows the existing `src/seed/` pattern (Payload Local API, `pnpm payload run`,
-  excluded from TS checking).
+Distinct from curated `issues` (committee-authored). Open to any resident, membership optional — logged-in members' Better Auth user id is captured in `reportedBy` (plain text, same cross-schema constraint as `linkedAuthUsers`), anonymous reporters get a `referenceCode` (`SCRA-{n}`, auto-assigned by a `beforeChange` hook that scans existing codes for the current max). Public submission form at `/report-issue` (`src/components/issue-report-form.tsx` → `src/app/(frontend)/api/issue-reports/route.ts`), same honeypot + min-fill-time spam guard as the membership application. Up to 3 photos, images only, ≤5MB each, uploaded as `media` records via the Local API. An `afterChange` hook emails the reporter (`sendIssueStatusChangedEmail()`) whenever `status` changes and `reporterEmail` is on file.
 
-### Map (two distinct builds, sequenced)
+### Renewal reminder cron — `vercel.json`, `src/app/(frontend)/api/cron/renewal-reminders/route.ts`
 
-1. **Static area/service map** (build first, data mostly exists already): sources `areas`,
-   `directory-entries`, curated `issues` with a location. Matches the marker categories in
-   `scraproposed.png`'s homepage mock (road projects, community facilities, healthcare, schools,
+Daily at 06:00 UTC (Vercel Hobby caps cron at once/day with up to ~1hr drift — fine for a date-offset digest job). `computeReminderStage()` (`src/lib/memberships.ts`) returns the due stage (`30day | 7day | dueday | lapsed`) for a given `expiryDate`; the route compares against each membership's `lastReminderStage` before sending, so a re-run the same day is a no-op. Auth is `Authorization: Bearer $CRON_SECRET`. Reuses `sendRenewalReminderEmail()` from the same Resend wrapper as every other transactional email in the app.
+
+### Legacy data migration (2025 spreadsheet) — `src/seed/run-memberships.ts`, already run
+
+Source: `materials/SCRA 2025 as at 16.06.2025.xlsx`, sheet **"2025 Members (2)"**. **241 primary membership records** imported and verified, including all 8 duplicate-number collisions resolved exactly per the original plan (Cronchey Christina→459, Winfred Deborah→460, Ashtel Aninah→461; Matiba Susan keeps 202, Van Niekerk Esme→462; Huth Valentina keeps 342, Stone Gillian→463; Genevier Chrisme keeps 414, Midi Agnes→464, Soprani Andrea→465 — all flagged in `importFlags` as reassigned-by-tiebreak). Every record: `expiryDate = 2026-12-31`, `importStatus: 'imported'`, `AMOUNT`/`NOTES` columns carried forward verbatim as free-text `importFlags` (never auto-mapped to a structured paid-amount field). No Better Auth accounts were created for any imported record — consistent with "account only after confirmed payment." Idempotent (upsert by `membershipNumber`), safe to re-run.
+
+### Production deploy requirement
+
+**Read gotcha #14 before deploying schema changes to production** — Payload's dev-mode schema push is disabled in production, and Better Auth has its own, separate migration command. Both must run, or the build fails (Payload) or auth silently breaks (Better Auth).
+
+### Map (two distinct builds, sequenced) — still not started
+
+1. **Static area/service map** (build first, data mostly exists already): sources `areas`, `directory-entries`, curated `issues` with a location. Matches the marker categories in `scraproposed.png`'s homepage mock (road projects, community facilities, healthcare, schools,
    environmental areas).
-2. **Live issue-report heatmap** (build second, near-free once #1 and `issue-reports` exist): plots
-   `issue-reports` pins, filterable by category/status. Depends on `issue-reports.location` being
+2. **Live issue-report heatmap** (build second, near-free once #1 and `issue-reports` exist): plots `issue-reports` pins, filterable by category/status. Depends on `issue-reports.location` being
    real lat/lng, already specified above.
-
-
 
 ```bash
 # from ~/projects/scra
