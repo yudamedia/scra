@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { applyGeocodeHook } from '@/lib/geocode'
 
 export const Areas: CollectionConfig = {
   slug: 'areas',
@@ -7,6 +8,16 @@ export const Areas: CollectionConfig = {
   },
   access: {
     read: () => true,
+  },
+  hooks: {
+    beforeChange: [
+      async ({ data }) => {
+        await applyGeocodeHook(data, {
+          sourceText: data.name ? `${data.name}, Kenya` : null,
+        })
+        return data
+      },
+    ],
   },
   fields: [
     {
@@ -46,6 +57,18 @@ export const Areas: CollectionConfig = {
     {
       name: 'attractions',
       type: 'richText',
+    },
+    {
+      name: 'location',
+      type: 'group',
+      admin: {
+        description:
+          'Auto-filled by geocoding the area name. Used as the map fallback center for directory entries and issues in this area that have no location of their own. Edit these manually if the auto-placed pin lands somewhere wrong — a manual value is never overwritten.',
+      },
+      fields: [
+        { name: 'lat', type: 'number' },
+        { name: 'lng', type: 'number' },
+      ],
     },
   ],
 }

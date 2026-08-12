@@ -244,12 +244,16 @@ Source: `materials/SCRA 2025 as at 16.06.2025.xlsx`, sheet **"2025 Members (2)"*
 
 **Read gotcha #14 before deploying schema changes to production** — Payload's dev-mode schema push is disabled in production, and Better Auth has its own, separate migration command. Both must run, or the build fails (Payload) or auth silently breaks (Better Auth).
 
-### Map (two distinct builds, sequenced) — still not started
+### Map (two distinct builds, sequenced)
 
-1. **Static area/service map** (build first, data mostly exists already): sources `areas`, `directory-entries`, curated `issues` with a location. Matches the marker categories in `scraproposed.png`'s homepage mock (road projects, community facilities, healthcare, schools,
-   environmental areas).
-2. **Live issue-report heatmap** (build second, near-free once #1 and `issue-reports` exist): plots `issue-reports` pins, filterable by category/status. Depends on `issue-reports.location` being
-   real lat/lng, already specified above.
+1. **Static area/service map — built.** `areas`, `directory-entries`, and `issues` each got a `location` group (`{ lat, lng }`, both plain numbers) auto-filled by a `beforeChange` hook via `applyGeocodeHook()`/`geocodeAddress()` (`src/lib/geocode.ts`, calls OSM's free Nominatim geocoder — no API key/billing account). The hook **only fills in empty lat/lng**, so a manually-corrected pin is never clobbered by a later save. Geocode source per collection: `areas` from `` `${name}, Kenya` `` (do **not** append a "South Coast" region string — Nominatim doesn't recognize it as a place and the query silently returns zero results, which is what happened on the first pass); `directory-entries` from the existing `address` field; `issues` from a new optional `locationText` field (admin-facing, e.g. "Diani Beach Road near the Nakumatt roundabout" — most issues don't have one set, which is fine, see fallback below). A one-off backfill script, `src/seed/backfill-locations.ts` (throttled ~1.1s/call per Nominatim's usage policy), geocoded all 9 existing areas on first run.
+
+   Marker categories/colors live in `src/lib/map-categories.ts` (`getMapMarkers()`), mapping the mockup's 5 legend categories onto `issues.category`/`directory-entries.category` values, with **areas never plotted directly** — an area's `location` is purely a fallback center for entries/issues in it that have no location of their own (`getMapMarkers()` resolves each record's own coords first, then its related `area.location`, dropping the marker entirely if neither resolves — never a fabricated (0,0) pin). Map UI: `src/components/map/leaflet-map.tsx` (client, react-leaflet v5 + Leaflet 1.9, colored inline-SVG `divIcon` pins, no external marker image assets) wrapped by `src/components/map/map-view.tsx` (client, `next/dynamic(..., { ssr: false })` — required since `next/dynamic` with `ssr:false` cannot be called directly inside a Server Component; the legend/category-filter checkboxes and `preview` mode toggle live here). Full page at `/map` (`src/app/(frontend)/map/page.tsx`); a smaller non-interactive preview embeds on the homepage, right after the existing "Upcoming Events / Explore the South Coast" row.
+
+   **Known content gap, not a bug**: as of this build, only 1 of 14 `directory-entries` and 7 of 21 `issues` actually have their `area` relationship set, and essentially none have `address`/`locationText` filled in — so most records currently have no resolvable location anywhere and are correctly dropped rather than plotted at a guessed spot. Only ~8 markers show up today. This needs secretariat data entry (linking `area`, and optionally `address`/`locationText` for a more precise pin than the area-center fallback) via the admin panel over time — re-run `pnpm payload run src/seed/backfill-locations.ts` after a batch of such edits to geocode the newly-filled-in text fields in bulk.
+
+2. **Live issue-report heatmap** (build second, near-free once `issue-reports` exist): plots `issue-reports` pins, filterable by category/status. Depends on `issue-reports.location` being
+   real lat/lng, already specified above. Not started.
 
 ```bash
 # from ~/projects/scra

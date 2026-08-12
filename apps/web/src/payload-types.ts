@@ -292,6 +292,13 @@ export interface Area {
     };
     [k: string]: unknown;
   } | null;
+  /**
+   * Auto-filled by geocoding the area name. Used as the map fallback center for directory entries and issues in this area that have no location of their own. Edit these manually if the auto-placed pin lands somewhere wrong — a manual value is never overwritten.
+   */
+  location?: {
+    lat?: number | null;
+    lng?: number | null;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -314,6 +321,17 @@ export interface Issue {
     | 'planning-development';
   status: 'received' | 'under-review' | 'in-progress' | 'resolved';
   area?: (number | null) | Area;
+  /**
+   * Specific site of this issue, e.g. "Diani Beach Road near the Nakumatt roundabout". Leave blank to show this issue at its area's general location on the map.
+   */
+  locationText?: string | null;
+  /**
+   * Auto-filled by geocoding the location text above. Edit manually if the auto-placed pin lands somewhere wrong — a manual value is never overwritten.
+   */
+  location?: {
+    lat?: number | null;
+    lng?: number | null;
+  };
   featuredImage?: (number | null) | Media;
   gallery?:
     | {
@@ -416,6 +434,13 @@ export interface DirectoryEntry {
   email?: string | null;
   website?: string | null;
   description?: string | null;
+  /**
+   * Auto-filled by geocoding the address above. Falls back to the linked area's location on the map if left blank. Edit manually if the auto-placed pin lands somewhere wrong — a manual value is never overwritten.
+   */
+  location?: {
+    lat?: number | null;
+    lng?: number | null;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -898,6 +923,12 @@ export interface AreasSelect<T extends boolean = true> {
         id?: T;
       };
   attractions?: T;
+  location?:
+    | T
+    | {
+        lat?: T;
+        lng?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }
@@ -911,6 +942,13 @@ export interface IssuesSelect<T extends boolean = true> {
   category?: T;
   status?: T;
   area?: T;
+  locationText?: T;
+  location?:
+    | T
+    | {
+        lat?: T;
+        lng?: T;
+      };
   featuredImage?: T;
   gallery?:
     | T
@@ -946,6 +984,12 @@ export interface DirectoryEntriesSelect<T extends boolean = true> {
   email?: T;
   website?: T;
   description?: T;
+  location?:
+    | T
+    | {
+        lat?: T;
+        lng?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }

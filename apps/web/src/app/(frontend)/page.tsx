@@ -3,6 +3,8 @@ import { getPayloadClient } from "@/lib/payload";
 import { IssueCard } from "@/components/issue-card";
 import { getDefaultThumbnail } from "@/lib/default-thumbnail";
 import { eventTypeLabels } from "@/lib/format";
+import { getMapMarkers } from "@/lib/map-categories";
+import MapView from "@/components/map/map-view";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   InformationCircleIcon,
@@ -17,7 +19,6 @@ import {
   Leaf01Icon,
   Building01Icon,
   Recycle01Icon,
-  Location01Icon,
 } from "@hugeicons/core-free-icons";
 
 export const revalidate = 60;
@@ -42,10 +43,9 @@ const issueCategoryLinks = [
 
 export default async function HomePage() {
   const payload = await getPayloadClient();
-  const [{ docs: posts }, { docs: areas }, { docs: upcomingEvents }, defaultThumbnail] =
+  const [{ docs: posts }, { docs: upcomingEvents }, defaultThumbnail] =
     await Promise.all([
       payload.find({ collection: "posts", limit: 3, sort: "-publishedDate", depth: 1 }),
-      payload.find({ collection: "areas", limit: 9, sort: "name" }),
       payload.find({
         collection: "events",
         limit: 50,
@@ -61,6 +61,12 @@ export default async function HomePage() {
     sort: "-updatedAt",
     depth: 1,
   });
+
+  const [{ docs: mapIssues }, { docs: mapDirectoryEntries }] = await Promise.all([
+    payload.find({ collection: "issues", limit: 200, depth: 1 }),
+    payload.find({ collection: "directory-entries", limit: 200, depth: 1 }),
+  ]);
+  const mapMarkers = getMapMarkers({ issues: mapIssues, directoryEntries: mapDirectoryEntries });
 
   const now = Date.now();
   const events = upcomingEvents
@@ -344,23 +350,12 @@ export default async function HomePage() {
 
           <div>
             <div className="flex items-end justify-between mb-8">
-              <h2>Explore the South Coast</h2>
-              <Link href="/areas" className="text-secondary font-medium hover:text-primary transition-colors text-sm">
-                View all areas →
+              <h2>South Coast Map</h2>
+              <Link href="/map" className="text-secondary font-medium hover:text-primary transition-colors text-sm">
+                View full map →
               </Link>
             </div>
-            <div className="grid grid-cols-3 gap-3">
-              {areas.map((area) => (
-                <Link
-                  key={area.id}
-                  href={`/areas/${area.slug}`}
-                  className="flex items-center gap-2 bg-card rounded-lg shadow-sm px-4 py-3.5 hover:-translate-y-0.5 hover:shadow-md transition-all"
-                >
-                  <HugeiconsIcon icon={Location01Icon} size={16} strokeWidth={1.8} className="text-secondary shrink-0" />
-                  <span className="text-sm font-medium text-primary truncate">{area.name}</span>
-                </Link>
-              ))}
-            </div>
+            <MapView markers={mapMarkers} preview />
           </div>
         </div>
       </section>

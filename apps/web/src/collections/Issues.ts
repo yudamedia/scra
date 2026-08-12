@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { applyGeocodeHook } from '@/lib/geocode'
 
 export const Issues: CollectionConfig = {
   slug: 'issues',
@@ -8,6 +9,14 @@ export const Issues: CollectionConfig = {
   },
   access: {
     read: () => true,
+  },
+  hooks: {
+    beforeChange: [
+      async ({ data }) => {
+        await applyGeocodeHook(data, { sourceText: data.locationText })
+        return data
+      },
+    ],
   },
   fields: [
     {
@@ -52,6 +61,26 @@ export const Issues: CollectionConfig = {
       name: 'area',
       type: 'relationship',
       relationTo: 'areas',
+    },
+    {
+      name: 'locationText',
+      type: 'text',
+      admin: {
+        description:
+          'Specific site of this issue, e.g. "Diani Beach Road near the Nakumatt roundabout". Leave blank to show this issue at its area\'s general location on the map.',
+      },
+    },
+    {
+      name: 'location',
+      type: 'group',
+      admin: {
+        description:
+          'Auto-filled by geocoding the location text above. Edit manually if the auto-placed pin lands somewhere wrong — a manual value is never overwritten.',
+      },
+      fields: [
+        { name: 'lat', type: 'number' },
+        { name: 'lng', type: 'number' },
+      ],
     },
     {
       name: 'featuredImage',

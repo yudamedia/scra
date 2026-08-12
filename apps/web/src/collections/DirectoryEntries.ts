@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { applyGeocodeHook } from '@/lib/geocode'
 
 export const DirectoryEntries: CollectionConfig = {
   slug: 'directory-entries',
@@ -8,6 +9,14 @@ export const DirectoryEntries: CollectionConfig = {
   },
   access: {
     read: () => true,
+  },
+  hooks: {
+    beforeChange: [
+      async ({ data }) => {
+        await applyGeocodeHook(data, { sourceText: data.address })
+        return data
+      },
+    ],
   },
   fields: [
     {
@@ -54,6 +63,18 @@ export const DirectoryEntries: CollectionConfig = {
     {
       name: 'description',
       type: 'textarea',
+    },
+    {
+      name: 'location',
+      type: 'group',
+      admin: {
+        description:
+          'Auto-filled by geocoding the address above. Falls back to the linked area\'s location on the map if left blank. Edit manually if the auto-placed pin lands somewhere wrong — a manual value is never overwritten.',
+      },
+      fields: [
+        { name: 'lat', type: 'number' },
+        { name: 'lng', type: 'number' },
+      ],
     },
   ],
 }
