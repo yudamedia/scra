@@ -123,7 +123,17 @@ export function SiteFooter() {
       <div className="border-t border-white/15">
         <div className="mx-auto w-[min(1280px,92%)] py-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-white/60">
           <p>© {new Date().getFullYear()} South Coast Residents&apos; Association. All rights reserved.</p>
-          <p>Representing residents, property owners and businesses from Likoni to Lunga Lunga.</p>
+          <p className="flex items-center gap-2">
+            <Link href="/privacy-policy" className="hover:text-white transition-colors">
+              Privacy Policy
+            </Link>
+            <span aria-hidden="true">|</span>
+            <Link href="/terms-of-service" className="hover:text-white transition-colors">
+              Terms of Service
+            </Link>
+            <span aria-hidden="true">|</span>
+            <span>Built by GraphicStation</span>
+          </p>
         </div>
       </div>
     </footer>
