@@ -9,7 +9,13 @@ import { verifyRecaptcha } from "./recaptcha";
 
 export const auth = betterAuth({
   database: new Pool({
-    connectionString: process.env.DATABASE_URI,
+    // Neon's pooled (pgbouncer) endpoint rejects the `-c search_path=...`
+    // startup parameter outright ("unsupported startup parameter in
+    // options"), so this must go over the unpooled/direct connection
+    // string, not DATABASE_URI. Locally both point at the same
+    // non-pooled Postgres container, so AUTH_DATABASE_URI can be left
+    // unset and this falls back to DATABASE_URI. See CLAUDE.md.
+    connectionString: process.env.AUTH_DATABASE_URI || process.env.DATABASE_URI,
     options: "-c search_path=auth,public",
   }),
   user: {
