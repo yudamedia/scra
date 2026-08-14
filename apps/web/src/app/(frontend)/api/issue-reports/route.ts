@@ -5,6 +5,7 @@ import { getPayloadClient } from "@/lib/payload";
 import { issueReportSchema } from "@/lib/issue-report-schema";
 import { auth } from "@/lib/auth";
 import { sendIssueReportConfirmationEmail } from "@/lib/email";
+import { verifyRecaptcha } from "@/lib/recaptcha";
 
 const MAX_PHOTOS = 3;
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
@@ -21,6 +22,11 @@ export async function POST(req: NextRequest) {
   const renderedAt = Number(form.get("renderedAt") ?? 0);
   if (!renderedAt || Date.now() - renderedAt < MIN_FILL_TIME_MS) {
     return NextResponse.json({ error: "Please try again." }, { status: 400 });
+  }
+
+  const recaptcha = await verifyRecaptcha(form.get("recaptchaToken"), { action: "issue_report" });
+  if (!recaptcha.ok) {
+    return NextResponse.json({ error: "Verification failed. Please try again." }, { status: 400 });
   }
 
   const parsed = issueReportSchema.safeParse({

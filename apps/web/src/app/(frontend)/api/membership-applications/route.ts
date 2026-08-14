@@ -4,6 +4,7 @@ import { getPayloadClient } from "@/lib/payload";
 import { membershipApplicationSchema } from "@/lib/membership-application-schema";
 import { subscriptionAmountForType } from "@/lib/memberships";
 import { sendMembershipApplicationConfirmationEmail } from "@/lib/email";
+import { verifyRecaptcha } from "@/lib/recaptcha";
 
 const MIN_FILL_TIME_MS = 3000;
 
@@ -21,6 +22,11 @@ export async function POST(req: NextRequest) {
   const renderedAt = Number(body.renderedAt ?? 0);
   if (!renderedAt || Date.now() - renderedAt < MIN_FILL_TIME_MS) {
     return NextResponse.json({ error: "Please try again." }, { status: 400 });
+  }
+
+  const recaptcha = await verifyRecaptcha(body.recaptchaToken, { action: "membership_application" });
+  if (!recaptcha.ok) {
+    return NextResponse.json({ error: "Verification failed. Please try again." }, { status: 400 });
   }
 
   const parsed = membershipApplicationSchema.safeParse(body);

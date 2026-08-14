@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { issueReportCategoryLabels } from "@/lib/format";
 import { issueReportCategories } from "@/lib/issue-report-schema";
+import { getRecaptchaToken } from "@/lib/recaptcha-client";
 
 const inputClass =
   "w-full rounded-md border border-input bg-background px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring";
@@ -26,6 +27,14 @@ export function IssueReportForm() {
 
     const formData = new FormData(e.currentTarget);
     formData.set("renderedAt", String(renderedAt.current ?? Date.now()));
+
+    try {
+      formData.set("recaptchaToken", await getRecaptchaToken("issue_report"));
+    } catch {
+      setError("Something went wrong. Please try again.");
+      setStatus("error");
+      return;
+    }
 
     try {
       const res = await fetch("/api/issue-reports", { method: "POST", body: formData });

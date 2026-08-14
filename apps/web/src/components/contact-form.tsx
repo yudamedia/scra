@@ -1,24 +1,87 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { getRecaptchaToken } from "@/lib/recaptcha-client";
 
 export function ContactForm() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [subject, setSubject] = useState("");
-  const [message, setMessage] = useState("");
+  const [status, setStatus] = useState<"idle" | "submitting" | "sent" | "error">("idle");
+  const [error, setError] = useState<string | null>(null);
+  const renderedAt = useRef<number | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
-  function handleSubmit(e: FormEvent) {
+  useEffect(() => {
+    renderedAt.current = Date.now();
+  }, []);
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const body = `${message}\n\n— ${name}${email ? ` (${email})` : ""}`;
-    const mailto = `mailto:chair@scra.co.ke?subject=${encodeURIComponent(
-      subject || "Message from SCRA website"
-    )}&body=${encodeURIComponent(body)}`;
-    window.location.href = mailto;
+    setStatus("submitting");
+    setError(null);
+
+    const form = new FormData(e.currentTarget);
+    let recaptchaToken: string;
+    try {
+      recaptchaToken = await getRecaptchaToken("contact");
+    } catch {
+      setError("Something went wrong. Please try again.");
+      setStatus("error");
+      return;
+    }
+
+    const payload = {
+      website: form.get("website"),
+      renderedAt: renderedAt.current ?? 0,
+      recaptchaToken,
+      name: form.get("name"),
+      email: form.get("email"),
+      subject: form.get("subject"),
+      message: form.get("message"),
+    };
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Something went wrong");
+      setStatus("sent");
+      formRef.current?.reset();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+      setStatus("error");
+    }
+  }
+
+  if (status === "sent") {
+    return (
+      <div className="bg-card rounded-lg shadow-sm p-8 text-center">
+        <p className="text-sm font-semibold uppercase tracking-wide text-secondary mb-2">
+          Message Sent
+        </p>
+        <p className="text-foreground">
+          Thanks for getting in touch — your message has been sent to SCRA&apos;s chairperson.
+        </p>
+        <button
+          type="button"
+          onClick={() => setStatus("idle")}
+          className="mt-6 text-sm text-secondary hover:underline"
+        >
+          Send another message
+        </button>
+      </div>
+    );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-card rounded-lg shadow-sm p-8 space-y-5">
+    <form ref={formRef} onSubmit={handleSubmit} className="bg-card rounded-lg shadow-sm p-8 space-y-5">
+      {/* Honeypot — hidden from real visitors via CSS, left plainly visible to naive bots */}
+      <div className="hidden" aria-hidden="true">
+        <label htmlFor="website">Website</label>
+        <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
+      </div>
+
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
           <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1.5">
@@ -26,10 +89,9 @@ export function ContactForm() {
           </label>
           <input
             id="name"
+            name="name"
             type="text"
             required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
             className="w-full rounded-md border border-input bg-background px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
@@ -39,10 +101,9 @@ export function ContactForm() {
           </label>
           <input
             id="email"
+            name="email"
             type="email"
             required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
             className="w-full rounded-md border border-input bg-background px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
@@ -53,9 +114,8 @@ export function ContactForm() {
         </label>
         <input
           id="subject"
+          name="subject"
           type="text"
-          value={subject}
-          onChange={(e) => setSubject(e.target.value)}
           className="w-full rounded-md border border-input bg-background px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
@@ -65,22 +125,24 @@ export function ContactForm() {
         </label>
         <textarea
           id="message"
+          name="message"
           required
           rows={5}
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
           className="w-full rounded-md border border-input bg-background px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
+
+      {error && <p className="text-sm text-destructive">{error}</p>}
+
       <button
         type="submit"
-        className="inline-flex items-center justify-center rounded-md bg-primary text-white font-semibold text-sm px-6 py-3 hover:bg-primary-dark transition-colors"
+        disabled={status === "submitting"}
+        className="inline-flex items-center justify-center rounded-md bg-primary text-white font-semibold text-sm px-6 py-3 hover:bg-primary-dark transition-colors disabled:opacity-60"
       >
-        Send Message
+        {status === "submitting" ? "Sending…" : "Send Message"}
       </button>
       <p className="text-xs text-muted-foreground">
-        This opens your email app with your message pre-filled, addressed to
-        SCRA&apos;s chairperson.
+        Sent directly to SCRA&apos;s chairperson.
       </p>
     </form>
   );

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
+import { getRecaptchaToken } from "@/lib/recaptcha-client";
 
 export default function PortalLoginPage() {
   const [email, setEmail] = useState("");
@@ -10,11 +11,16 @@ export default function PortalLoginPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setStatus("sending");
-    const { error } = await authClient.signIn.magicLink({
-      email,
-      callbackURL: "/portal",
-    });
-    setStatus(error ? "error" : "sent");
+    try {
+      const recaptchaToken = await getRecaptchaToken("portal_login");
+      const { error } = await authClient.signIn.magicLink(
+        { email, callbackURL: "/portal" },
+        { body: { recaptchaToken } },
+      );
+      setStatus(error ? "error" : "sent");
+    } catch {
+      setStatus("error");
+    }
   }
 
   return (

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import { maxAdditionalMembersByType, membershipApplicationTypes } from "@/lib/membership-application-schema";
+import { getRecaptchaToken } from "@/lib/recaptcha-client";
 
 type MembershipType = (typeof membershipApplicationTypes)[number];
 
@@ -56,9 +57,19 @@ export function MembershipApplicationForm() {
     setError(null);
 
     const form = new FormData(e.currentTarget);
+    let recaptchaToken: string;
+    try {
+      recaptchaToken = await getRecaptchaToken("membership_application");
+    } catch {
+      setError("Something went wrong. Please try again.");
+      setStatus("error");
+      return;
+    }
+
     const payload = {
       website: form.get("website"),
       renderedAt: renderedAt.current ?? 0,
+      recaptchaToken,
       type,
       surname: form.get("surname"),
       firstName: form.get("firstName"),

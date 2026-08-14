@@ -75,8 +75,7 @@ export default function ContactPage() {
                   Diani, Kenya
                 </p>
                 <p className="text-muted-foreground text-xs mt-1 italic">
-                  A specific office address will be published here once
-                  confirmed.
+                  First floor, Diani Beach Shopping Center.
                 </p>
               </div>
             </div>

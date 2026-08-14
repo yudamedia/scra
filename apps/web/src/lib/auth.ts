@@ -1,9 +1,11 @@
 import { betterAuth } from "better-auth";
 import { admin, magicLink } from "better-auth/plugins";
+import { APIError, createAuthMiddleware } from "better-auth/api";
 import { Pool } from "pg";
 
 import { sendMagicLinkEmail } from "./email";
 import { portalTestLogin } from "./portal-test-login";
+import { verifyRecaptcha } from "./recaptcha";
 
 export const auth = betterAuth({
   database: new Pool({
@@ -31,6 +33,20 @@ export const auth = betterAuth({
     // magic-link-only accounts.
     enabled: true,
     disableSignUp: true,
+  },
+  hooks: {
+    // Better Auth has no per-endpoint lifecycle hook for the magicLink
+    // plugin, so this is scoped manually by path — it runs before the
+    // magic-link endpoint's own handler, so a rejection here means no
+    // email is ever sent. See CLAUDE.md's reCAPTCHA section.
+    before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== "/sign-in/magic-link") return;
+
+      const recaptcha = await verifyRecaptcha(ctx.body?.recaptchaToken, { action: "portal_login" });
+      if (!recaptcha.ok) {
+        throw new APIError("FORBIDDEN", { message: "Verification failed. Please try again." });
+      }
+    }),
   },
   plugins: [
     // Lets trusted server code (membership-activation.ts) create a member

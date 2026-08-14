@@ -160,6 +160,28 @@ export async function sendIssueStatusChangedEmail(
   });
 }
 
+const CONTACT_INBOX = "chair@scra.co.ke";
+
+export async function sendContactFormEmail(data: { name: string; email: string; subject?: string; message: string }) {
+  const resend = getClient();
+
+  if (!resend) {
+    console.log(`[email] RESEND_API_KEY not set — contact form message from ${data.email}: ${data.message}`);
+    return;
+  }
+
+  await resend.emails.send({
+    from: FROM,
+    to: CONTACT_INBOX,
+    replyTo: data.email,
+    subject: data.subject || "Message from SCRA website",
+    html: `
+      <p>From: ${data.name} (${data.email})</p>
+      <p>${data.message.replace(/\n/g, "<br>")}</p>
+    `,
+  });
+}
+
 export async function sendRenewalReminderEmail(
   email: string,
   data: { name: string; stage: "30day" | "7day" | "dueday" | "lapsed"; expiryDate: string; membershipNumber: string },

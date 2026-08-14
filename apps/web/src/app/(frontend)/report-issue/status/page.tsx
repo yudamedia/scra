@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { issueReportCategoryLabels, issueReportStatusStyles } from "@/lib/format";
 import { formatLabel } from "@/lib/format";
+import { getRecaptchaToken } from "@/lib/recaptcha-client";
 
 type StatusEntry = { status: string; changedAt: string; note?: string };
 type ReportStatus = {
@@ -25,7 +26,10 @@ export default function ReportStatusPage() {
     setError(null);
     setReport(null);
     try {
-      const res = await fetch(`/api/issue-reports/status?code=${encodeURIComponent(code.trim())}`);
+      const recaptchaToken = await getRecaptchaToken("issue_report_status");
+      const res = await fetch(
+        `/api/issue-reports/status?code=${encodeURIComponent(code.trim())}&recaptchaToken=${encodeURIComponent(recaptchaToken)}`,
+      );
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Not found");
       setReport(json);
