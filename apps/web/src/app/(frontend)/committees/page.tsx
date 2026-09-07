@@ -5,11 +5,15 @@ export const revalidate = 60;
 
 export default async function CommitteesPage() {
   const payload = await getPayloadClient();
-  const { docs: committees } = await payload.find({
-    collection: "committees",
-    limit: 50,
-    sort: "name",
-  });
+  const [{ docs: committees }, pageIntros] = await Promise.all([
+    payload.find({
+      collection: "committees",
+      limit: 50,
+      sort: "name",
+    }),
+    payload.findGlobal({ slug: "page-intros" }),
+  ]);
+  const intro = pageIntros.committees;
 
   const committeesWithMembers = await Promise.all(
     committees.map(async (committee) => {
@@ -34,14 +38,13 @@ export default async function CommitteesPage() {
         }}
       >
         <div className="mx-auto w-[min(1280px,92%)]">
-          <p className="text-sm font-semibold uppercase tracking-wide text-white/80 mb-2">
-            Committees
-          </p>
-          <h1 className="text-white mb-4">SCRA Committees</h1>
-          <p className="max-w-2xl text-white/90 text-lg">
-            The committees and working groups carrying out SCRA&apos;s work
-            across the South Coast.
-          </p>
+          {intro?.eyebrow && (
+            <p className="text-sm font-semibold uppercase tracking-wide text-white/80 mb-2">
+              {intro.eyebrow}
+            </p>
+          )}
+          <h1 className="text-white mb-4">{intro?.heading}</h1>
+          {intro?.paragraph && <p className="max-w-2xl text-white/90 text-lg">{intro.paragraph}</p>}
         </div>
       </section>
 

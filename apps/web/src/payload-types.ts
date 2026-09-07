@@ -109,8 +109,26 @@ export interface Config {
     defaultIDType: number;
   };
   fallbackLocale: null;
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    'site-settings': SiteSetting;
+    'main-navigation': MainNavigation;
+    'issue-categories': IssueCategory;
+    homepage: Homepage;
+    'about-page': AboutPage;
+    'membership-page': MembershipPage;
+    'page-intros': PageIntro;
+    'legal-pages': LegalPage;
+  };
+  globalsSelect: {
+    'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
+    'main-navigation': MainNavigationSelect<false> | MainNavigationSelect<true>;
+    'issue-categories': IssueCategoriesSelect<false> | IssueCategoriesSelect<true>;
+    homepage: HomepageSelect<false> | HomepageSelect<true>;
+    'about-page': AboutPageSelect<false> | AboutPageSelect<true>;
+    'membership-page': MembershipPageSelect<false> | MembershipPageSelect<true>;
+    'page-intros': PageIntrosSelect<false> | PageIntrosSelect<true>;
+    'legal-pages': LegalPagesSelect<false> | LegalPagesSelect<true>;
+  };
   locale: null;
   widgets: {
     collections: CollectionsWidget;
@@ -1189,6 +1207,949 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-settings".
+ */
+export interface SiteSetting {
+  id: number;
+  orgName: string;
+  /**
+   * Shown on the homepage hero and in the footer.
+   */
+  tagline: string;
+  /**
+   * Falls back to the built-in logo file if left empty.
+   */
+  logo?: (number | null) | Media;
+  contact?: {
+    phone?: string | null;
+    email?: string | null;
+    /**
+     * e.g. "Diani, Kenya"
+     */
+    addressLine1?: string | null;
+    /**
+     * e.g. "First floor, Diani Beach Shopping Center."
+     */
+    addressDetail?: string | null;
+  };
+  social?:
+    | {
+        platform: 'facebook' | 'instagram' | 'x' | 'youtube';
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
+  payment?: {
+    paybillNumber?: string | null;
+    paybillAccount?: string | null;
+    /**
+     * e.g. instructions for paying at the Safarilink Office.
+     */
+    payInPersonText?: string | null;
+  };
+  seoDefaults?: {
+    defaultTitle?: string | null;
+    defaultDescription?: string | null;
+  };
+  footerLegal?: {
+    copyrightName?: string | null;
+    builtByText?: string | null;
+  };
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "main-navigation".
+ */
+export interface MainNavigation {
+  id: number;
+  /**
+   * Top nav bar. Leave "children" empty for a plain link with no dropdown.
+   */
+  headerLinks?:
+    | {
+        label: string;
+        href: string;
+        children?:
+          | {
+              label: string;
+              href: string;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  footerQuickLinks?:
+    | {
+        label: string;
+        href: string;
+        id?: string | null;
+      }[]
+    | null;
+  footerResourceLinks?:
+    | {
+        label: string;
+        href: string;
+        id?: string | null;
+      }[]
+    | null;
+  footerLegalLinks?:
+    | {
+        label: string;
+        href: string;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * Marketing copy (label/description/icon) for issue categories shown in the header dropdown, homepage tiles, and issues page filters. The underlying category values are defined in the Issues collection.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "issue-categories".
+ */
+export interface IssueCategory {
+  id: number;
+  categories?:
+    | {
+        value:
+          | 'roads-infrastructure'
+          | 'security'
+          | 'water-supply'
+          | 'electricity'
+          | 'waste-management'
+          | 'environment'
+          | 'beach-access'
+          | 'planning-development';
+        label: string;
+        description?: string | null;
+        icon?:
+          | (
+              | 'information-circle'
+              | 'shield-01'
+              | 'news'
+              | 'calendar-01'
+              | 'folder-01'
+              | 'call-02'
+              | 'road'
+              | 'shield-02'
+              | 'droplet'
+              | 'leaf-01'
+              | 'building-01'
+              | 'recycle-01'
+              | 'checkmark-circle-02'
+              | 'notification-01'
+              | 'discount-01'
+              | 'megaphone-01'
+              | 'idea'
+              | 'document-attachment'
+              | 'target-02'
+              | 'shield-user'
+              | 'user-group'
+              | 'facebook-01'
+              | 'mail-01'
+              | 'location-01'
+            )
+          | null;
+        /**
+         * Show this category as one of the tiles in the homepage "Issues We Are Working On" section.
+         */
+        featuredOnHomepage?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "homepage".
+ */
+export interface Homepage {
+  id: number;
+  hero: {
+    heading: string;
+    subtext?: string | null;
+    /**
+     * Falls back to /hero/homepage.jpg if left empty.
+     */
+    image?: (number | null) | Media;
+    ctaButtons?:
+      | {
+          label: string;
+          href: string;
+          style?: ('primary' | 'secondary') | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  /**
+   * The icon row of shortcuts just below the hero.
+   */
+  quickLinks?:
+    | {
+        label: string;
+        sub?: string | null;
+        href: string;
+        icon?:
+          | (
+              | 'information-circle'
+              | 'shield-01'
+              | 'news'
+              | 'calendar-01'
+              | 'folder-01'
+              | 'call-02'
+              | 'road'
+              | 'shield-02'
+              | 'droplet'
+              | 'leaf-01'
+              | 'building-01'
+              | 'recycle-01'
+              | 'checkmark-circle-02'
+              | 'notification-01'
+              | 'discount-01'
+              | 'megaphone-01'
+              | 'idea'
+              | 'document-attachment'
+              | 'target-02'
+              | 'shield-user'
+              | 'user-group'
+              | 'facebook-01'
+              | 'mail-01'
+              | 'location-01'
+            )
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  newsSection?: {
+    eyebrow?: string | null;
+    heading?: string | null;
+  };
+  issuesSection?: {
+    eyebrow?: string | null;
+    heading?: string | null;
+  };
+  membershipCta?: {
+    heading?: string | null;
+    paragraph?: string | null;
+    buttonLabel?: string | null;
+    benefits?:
+      | {
+          icon?:
+            | (
+                | 'information-circle'
+                | 'shield-01'
+                | 'news'
+                | 'calendar-01'
+                | 'folder-01'
+                | 'call-02'
+                | 'road'
+                | 'shield-02'
+                | 'droplet'
+                | 'leaf-01'
+                | 'building-01'
+                | 'recycle-01'
+                | 'checkmark-circle-02'
+                | 'notification-01'
+                | 'discount-01'
+                | 'megaphone-01'
+                | 'idea'
+                | 'document-attachment'
+                | 'target-02'
+                | 'shield-user'
+                | 'user-group'
+                | 'facebook-01'
+                | 'mail-01'
+                | 'location-01'
+              )
+            | null;
+          title: string;
+          text?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  eventsEmptyStateText?: string | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "about-page".
+ */
+export interface AboutPage {
+  id: number;
+  hero: {
+    eyebrow?: string | null;
+    heading: string;
+    paragraph?: string | null;
+    /**
+     * Falls back to /hero/aboutus.jpg if left empty.
+     */
+    image?: (number | null) | Media;
+  };
+  /**
+   * Areas-served and issues-tracked counts are computed live from the Areas/Issues collections — only their labels are editable here.
+   */
+  stats?: {
+    foundedYear?: string | null;
+    membersValue?: string | null;
+    membersLabel?: string | null;
+    areasServedLabel?: string | null;
+    issuesTrackedLabel?: string | null;
+  };
+  history?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  whoWeRepresent?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  whatWeDoIntro?: string | null;
+  whatWeDo?:
+    | {
+        icon?:
+          | (
+              | 'information-circle'
+              | 'shield-01'
+              | 'news'
+              | 'calendar-01'
+              | 'folder-01'
+              | 'call-02'
+              | 'road'
+              | 'shield-02'
+              | 'droplet'
+              | 'leaf-01'
+              | 'building-01'
+              | 'recycle-01'
+              | 'checkmark-circle-02'
+              | 'notification-01'
+              | 'discount-01'
+              | 'megaphone-01'
+              | 'idea'
+              | 'document-attachment'
+              | 'target-02'
+              | 'shield-user'
+              | 'user-group'
+              | 'facebook-01'
+              | 'mail-01'
+              | 'location-01'
+            )
+          | null;
+        title: string;
+        text?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Use the token "{count}" in the text of the Committees card to interpolate the live committee count, e.g. "{count} committees and working groups carry out SCRA's work...".
+   */
+  bottomCtaCards?:
+    | {
+        title: string;
+        text?: string | null;
+        linkLabel?: string | null;
+        href: string;
+        /**
+         * Renders this card in the dark/primary style (e.g. "Become a Member").
+         */
+        featured?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "membership-page".
+ */
+export interface MembershipPage {
+  id: number;
+  hero: {
+    eyebrow?: string | null;
+    heading: string;
+    paragraph?: string | null;
+  };
+  tiers?:
+    | {
+        name: string;
+        type: 'personal' | 'household' | 'corporate';
+        price: string;
+        period?: string | null;
+        detail?: string | null;
+        featured?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  tiersFootnote?: string | null;
+  benefits?:
+    | {
+        icon?:
+          | (
+              | 'information-circle'
+              | 'shield-01'
+              | 'news'
+              | 'calendar-01'
+              | 'folder-01'
+              | 'call-02'
+              | 'road'
+              | 'shield-02'
+              | 'droplet'
+              | 'leaf-01'
+              | 'building-01'
+              | 'recycle-01'
+              | 'checkmark-circle-02'
+              | 'notification-01'
+              | 'discount-01'
+              | 'megaphone-01'
+              | 'idea'
+              | 'document-attachment'
+              | 'target-02'
+              | 'shield-user'
+              | 'user-group'
+              | 'facebook-01'
+              | 'mail-01'
+              | 'location-01'
+            )
+          | null;
+        title: string;
+        text?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  discounts?: {
+    heading?: string | null;
+    intro?: string | null;
+  };
+  howToJoin?: {
+    heading?: string | null;
+    applyButtonLabel?: string | null;
+    /**
+     * Falls back to Site Settings > Payment > Pay In Person Text if left empty.
+     */
+    payInPersonText?: string | null;
+    footerNote?: string | null;
+  };
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * Hero eyebrow/heading/paragraph for pages that only need a simple intro block above their CMS-driven list.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "page-intros".
+ */
+export interface PageIntro {
+  id: number;
+  contact?: {
+    eyebrow?: string | null;
+    heading?: string | null;
+    paragraph?: string | null;
+    image?: (number | null) | Media;
+    membershipCalloutText?: string | null;
+  };
+  leadership?: {
+    eyebrow?: string | null;
+    heading?: string | null;
+    paragraph?: string | null;
+    image?: (number | null) | Media;
+  };
+  committees?: {
+    eyebrow?: string | null;
+    heading?: string | null;
+    paragraph?: string | null;
+    image?: (number | null) | Media;
+  };
+  directory?: {
+    eyebrow?: string | null;
+    heading?: string | null;
+    paragraph?: string | null;
+    image?: (number | null) | Media;
+  };
+  issues?: {
+    eyebrow?: string | null;
+    heading?: string | null;
+    paragraph?: string | null;
+    image?: (number | null) | Media;
+  };
+  news?: {
+    eyebrow?: string | null;
+    heading?: string | null;
+    paragraph?: string | null;
+    image?: (number | null) | Media;
+  };
+  areas?: {
+    eyebrow?: string | null;
+    heading?: string | null;
+    paragraph?: string | null;
+    image?: (number | null) | Media;
+  };
+  documents?: {
+    eyebrow?: string | null;
+    heading?: string | null;
+    paragraph?: string | null;
+    image?: (number | null) | Media;
+    emptyStateText?: string | null;
+  };
+  events?: {
+    eyebrow?: string | null;
+    heading?: string | null;
+    paragraph?: string | null;
+    image?: (number | null) | Media;
+    emptyStateHeading?: string | null;
+    emptyStateText?: string | null;
+  };
+  map?: {
+    eyebrow?: string | null;
+    heading?: string | null;
+    paragraph?: string | null;
+    image?: (number | null) | Media;
+  };
+  reportIssue?: {
+    eyebrow?: string | null;
+    heading?: string | null;
+    paragraph?: string | null;
+    image?: (number | null) | Media;
+  };
+  membershipApply?: {
+    eyebrow?: string | null;
+    heading?: string | null;
+    paragraph?: string | null;
+    image?: (number | null) | Media;
+  };
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * Markdown source for the Privacy Policy and Terms of Service pages, rendered client-side via react-markdown — write standard markdown (#/## headings, **bold**, - lists) here.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "legal-pages".
+ */
+export interface LegalPage {
+  id: number;
+  privacyPolicyMarkdown?: string | null;
+  termsOfServiceMarkdown?: string | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-settings_select".
+ */
+export interface SiteSettingsSelect<T extends boolean = true> {
+  orgName?: T;
+  tagline?: T;
+  logo?: T;
+  contact?:
+    | T
+    | {
+        phone?: T;
+        email?: T;
+        addressLine1?: T;
+        addressDetail?: T;
+      };
+  social?:
+    | T
+    | {
+        platform?: T;
+        url?: T;
+        id?: T;
+      };
+  payment?:
+    | T
+    | {
+        paybillNumber?: T;
+        paybillAccount?: T;
+        payInPersonText?: T;
+      };
+  seoDefaults?:
+    | T
+    | {
+        defaultTitle?: T;
+        defaultDescription?: T;
+      };
+  footerLegal?:
+    | T
+    | {
+        copyrightName?: T;
+        builtByText?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "main-navigation_select".
+ */
+export interface MainNavigationSelect<T extends boolean = true> {
+  headerLinks?:
+    | T
+    | {
+        label?: T;
+        href?: T;
+        children?:
+          | T
+          | {
+              label?: T;
+              href?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  footerQuickLinks?:
+    | T
+    | {
+        label?: T;
+        href?: T;
+        id?: T;
+      };
+  footerResourceLinks?:
+    | T
+    | {
+        label?: T;
+        href?: T;
+        id?: T;
+      };
+  footerLegalLinks?:
+    | T
+    | {
+        label?: T;
+        href?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "issue-categories_select".
+ */
+export interface IssueCategoriesSelect<T extends boolean = true> {
+  categories?:
+    | T
+    | {
+        value?: T;
+        label?: T;
+        description?: T;
+        icon?: T;
+        featuredOnHomepage?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "homepage_select".
+ */
+export interface HomepageSelect<T extends boolean = true> {
+  hero?:
+    | T
+    | {
+        heading?: T;
+        subtext?: T;
+        image?: T;
+        ctaButtons?:
+          | T
+          | {
+              label?: T;
+              href?: T;
+              style?: T;
+              id?: T;
+            };
+      };
+  quickLinks?:
+    | T
+    | {
+        label?: T;
+        sub?: T;
+        href?: T;
+        icon?: T;
+        id?: T;
+      };
+  newsSection?:
+    | T
+    | {
+        eyebrow?: T;
+        heading?: T;
+      };
+  issuesSection?:
+    | T
+    | {
+        eyebrow?: T;
+        heading?: T;
+      };
+  membershipCta?:
+    | T
+    | {
+        heading?: T;
+        paragraph?: T;
+        buttonLabel?: T;
+        benefits?:
+          | T
+          | {
+              icon?: T;
+              title?: T;
+              text?: T;
+              id?: T;
+            };
+      };
+  eventsEmptyStateText?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "about-page_select".
+ */
+export interface AboutPageSelect<T extends boolean = true> {
+  hero?:
+    | T
+    | {
+        eyebrow?: T;
+        heading?: T;
+        paragraph?: T;
+        image?: T;
+      };
+  stats?:
+    | T
+    | {
+        foundedYear?: T;
+        membersValue?: T;
+        membersLabel?: T;
+        areasServedLabel?: T;
+        issuesTrackedLabel?: T;
+      };
+  history?: T;
+  whoWeRepresent?: T;
+  whatWeDoIntro?: T;
+  whatWeDo?:
+    | T
+    | {
+        icon?: T;
+        title?: T;
+        text?: T;
+        id?: T;
+      };
+  bottomCtaCards?:
+    | T
+    | {
+        title?: T;
+        text?: T;
+        linkLabel?: T;
+        href?: T;
+        featured?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "membership-page_select".
+ */
+export interface MembershipPageSelect<T extends boolean = true> {
+  hero?:
+    | T
+    | {
+        eyebrow?: T;
+        heading?: T;
+        paragraph?: T;
+      };
+  tiers?:
+    | T
+    | {
+        name?: T;
+        type?: T;
+        price?: T;
+        period?: T;
+        detail?: T;
+        featured?: T;
+        id?: T;
+      };
+  tiersFootnote?: T;
+  benefits?:
+    | T
+    | {
+        icon?: T;
+        title?: T;
+        text?: T;
+        id?: T;
+      };
+  discounts?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+      };
+  howToJoin?:
+    | T
+    | {
+        heading?: T;
+        applyButtonLabel?: T;
+        payInPersonText?: T;
+        footerNote?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "page-intros_select".
+ */
+export interface PageIntrosSelect<T extends boolean = true> {
+  contact?:
+    | T
+    | {
+        eyebrow?: T;
+        heading?: T;
+        paragraph?: T;
+        image?: T;
+        membershipCalloutText?: T;
+      };
+  leadership?:
+    | T
+    | {
+        eyebrow?: T;
+        heading?: T;
+        paragraph?: T;
+        image?: T;
+      };
+  committees?:
+    | T
+    | {
+        eyebrow?: T;
+        heading?: T;
+        paragraph?: T;
+        image?: T;
+      };
+  directory?:
+    | T
+    | {
+        eyebrow?: T;
+        heading?: T;
+        paragraph?: T;
+        image?: T;
+      };
+  issues?:
+    | T
+    | {
+        eyebrow?: T;
+        heading?: T;
+        paragraph?: T;
+        image?: T;
+      };
+  news?:
+    | T
+    | {
+        eyebrow?: T;
+        heading?: T;
+        paragraph?: T;
+        image?: T;
+      };
+  areas?:
+    | T
+    | {
+        eyebrow?: T;
+        heading?: T;
+        paragraph?: T;
+        image?: T;
+      };
+  documents?:
+    | T
+    | {
+        eyebrow?: T;
+        heading?: T;
+        paragraph?: T;
+        image?: T;
+        emptyStateText?: T;
+      };
+  events?:
+    | T
+    | {
+        eyebrow?: T;
+        heading?: T;
+        paragraph?: T;
+        image?: T;
+        emptyStateHeading?: T;
+        emptyStateText?: T;
+      };
+  map?:
+    | T
+    | {
+        eyebrow?: T;
+        heading?: T;
+        paragraph?: T;
+        image?: T;
+      };
+  reportIssue?:
+    | T
+    | {
+        eyebrow?: T;
+        heading?: T;
+        paragraph?: T;
+        image?: T;
+      };
+  membershipApply?:
+    | T
+    | {
+        eyebrow?: T;
+        heading?: T;
+        paragraph?: T;
+        image?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "legal-pages_select".
+ */
+export interface LegalPagesSelect<T extends boolean = true> {
+  privacyPolicyMarkdown?: T;
+  termsOfServiceMarkdown?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

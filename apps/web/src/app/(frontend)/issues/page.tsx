@@ -26,7 +26,7 @@ export default async function IssuesIndexPage({
   const activeCategory = issueCategories.includes(category ?? "") ? category : undefined;
 
   const payload = await getPayloadClient();
-  const [{ docs: issues }, defaultThumbnail] = await Promise.all([
+  const [{ docs: issues }, defaultThumbnail, pageIntros] = await Promise.all([
     payload.find({
       collection: "issues",
       limit: 100,
@@ -35,7 +35,9 @@ export default async function IssuesIndexPage({
       where: activeCategory ? { category: { equals: activeCategory } } : undefined,
     }),
     getDefaultThumbnail(),
+    payload.findGlobal({ slug: "page-intros" }),
   ]);
+  const intro = pageIntros.issues;
 
   const statusOrder = ["received", "under-review", "in-progress", "resolved"];
   const sorted = [...issues].sort(
@@ -54,17 +56,15 @@ export default async function IssuesIndexPage({
         }}
       >
         <div className="mx-auto w-[min(1280px,92%)]">
-          <p className="text-sm font-semibold uppercase tracking-wide text-white/80 mb-2">
-            South Coast Issues
-          </p>
+          {intro?.eyebrow && (
+            <p className="text-sm font-semibold uppercase tracking-wide text-white/80 mb-2">
+              {intro.eyebrow}
+            </p>
+          )}
           <h1 className="text-white mb-4">
-            {activeCategory ? formatLabel(activeCategory) : "Tracking the Issues That Matter"}
+            {activeCategory ? formatLabel(activeCategory) : intro?.heading}
           </h1>
-          <p className="max-w-2xl text-white/90 text-lg">
-            From beach access to environmental protection, here&apos;s what
-            SCRA is working on across the South Coast — and what&apos;s
-            already been resolved.
-          </p>
+          {intro?.paragraph && <p className="max-w-2xl text-white/90 text-lg">{intro.paragraph}</p>}
           <div className="flex flex-wrap gap-2 mt-6">
             <Link
               href="/issues"

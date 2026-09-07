@@ -3,17 +3,22 @@ import { getPayloadClient } from "@/lib/payload";
 import { eventTypeLabels } from "@/lib/format";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Calendar01Icon, Location01Icon, LockIcon } from "@hugeicons/core-free-icons";
+import { renderInlineLinks } from "@/lib/inline-links";
 
 export const revalidate = 60;
 
 export default async function EventsIndexPage() {
   const payload = await getPayloadClient();
-  const { docs: events } = await payload.find({
-    collection: "events",
-    limit: 200,
-    sort: "startDate",
-    depth: 1,
-  });
+  const [{ docs: events }, pageIntros] = await Promise.all([
+    payload.find({
+      collection: "events",
+      limit: 200,
+      sort: "startDate",
+      depth: 1,
+    }),
+    payload.findGlobal({ slug: "page-intros" }),
+  ]);
+  const intro = pageIntros.events;
 
   const now = Date.now();
   const upcoming = events.filter((e) => new Date(e.startDate).getTime() >= now);
@@ -82,14 +87,13 @@ export default async function EventsIndexPage() {
         }}
       >
         <div className="mx-auto w-[min(1280px,92%)]">
-          <p className="text-sm font-semibold uppercase tracking-wide text-white/80 mb-2">
-            Events
-          </p>
-          <h1 className="text-white mb-4">What&apos;s Happening on the South Coast</h1>
-          <p className="max-w-2xl text-white/90 text-lg">
-            Public participation meetings, community events, environmental
-            activities and committee meetings from SCRA.
-          </p>
+          {intro?.eyebrow && (
+            <p className="text-sm font-semibold uppercase tracking-wide text-white/80 mb-2">
+              {intro.eyebrow}
+            </p>
+          )}
+          <h1 className="text-white mb-4">{intro?.heading}</h1>
+          {intro?.paragraph && <p className="max-w-2xl text-white/90 text-lg">{intro.paragraph}</p>}
         </div>
       </section>
 
@@ -103,14 +107,9 @@ export default async function EventsIndexPage() {
                 strokeWidth={1.5}
                 className="text-secondary mx-auto mb-4"
               />
-              <h2 className="text-xl mb-2">No Events Scheduled Yet</h2>
+              <h2 className="text-xl mb-2">{intro?.emptyStateHeading}</h2>
               <p className="text-muted-foreground">
-                There&apos;s nothing on the calendar right now — check back
-                soon, or visit our{" "}
-                <Link href="/news" className="text-secondary hover:text-primary font-medium">
-                  Newsroom
-                </Link>{" "}
-                for the latest updates.
+                {renderInlineLinks(intro?.emptyStateText, "text-secondary hover:text-primary font-medium")}
               </p>
             </div>
           ) : (

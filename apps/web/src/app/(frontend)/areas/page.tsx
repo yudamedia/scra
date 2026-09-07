@@ -5,11 +5,15 @@ export const revalidate = 60;
 
 export default async function AreasIndexPage() {
   const payload = await getPayloadClient();
-  const { docs: areas } = await payload.find({
-    collection: "areas",
-    limit: 50,
-    sort: "name",
-  });
+  const [{ docs: areas }, pageIntros] = await Promise.all([
+    payload.find({
+      collection: "areas",
+      limit: 50,
+      sort: "name",
+    }),
+    payload.findGlobal({ slug: "page-intros" }),
+  ]);
+  const intro = pageIntros.areas;
 
   return (
     <>
@@ -23,15 +27,13 @@ export default async function AreasIndexPage() {
         }}
       >
         <div className="mx-auto w-[min(1280px,92%)]">
-          <p className="text-sm font-semibold uppercase tracking-wide text-white/80 mb-2">
-            Area Guides
-          </p>
-          <h1 className="text-white mb-4">The South Coast, Area by Area</h1>
-          <p className="max-w-2xl text-white/90 text-lg">
-            From the Likoni ferry crossing to the Tanzanian border at Lunga
-            Lunga, explore what makes each stretch of the South Coast
-            distinct.
-          </p>
+          {intro?.eyebrow && (
+            <p className="text-sm font-semibold uppercase tracking-wide text-white/80 mb-2">
+              {intro.eyebrow}
+            </p>
+          )}
+          <h1 className="text-white mb-4">{intro?.heading}</h1>
+          {intro?.paragraph && <p className="max-w-2xl text-white/90 text-lg">{intro.paragraph}</p>}
         </div>
       </section>
 

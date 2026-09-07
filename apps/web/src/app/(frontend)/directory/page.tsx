@@ -5,11 +5,15 @@ export const revalidate = 60;
 
 export default async function DirectoryPage() {
   const payload = await getPayloadClient();
-  const { docs: entries } = await payload.find({
-    collection: "directory-entries",
-    limit: 200,
-    sort: "name",
-  });
+  const [{ docs: entries }, pageIntros] = await Promise.all([
+    payload.find({
+      collection: "directory-entries",
+      limit: 200,
+      sort: "name",
+    }),
+    payload.findGlobal({ slug: "page-intros" }),
+  ]);
+  const intro = pageIntros.directory;
 
   const grouped = entries.reduce<Record<string, typeof entries>>((acc, entry) => {
     const key = String(entry.category);
@@ -25,14 +29,13 @@ export default async function DirectoryPage() {
     <>
       <section className="bg-muted py-16 md:py-20">
         <div className="mx-auto w-[min(1280px,92%)]">
-          <p className="text-sm font-semibold uppercase tracking-wide text-secondary mb-2">
-            Community Directory
-          </p>
-          <h1 className="mb-4">Essential South Coast Services</h1>
-          <p className="max-w-2xl text-muted-foreground text-lg">
-            Hospitals, emergency contacts, member businesses, and partner
-            organisations across the South Coast.
-          </p>
+          {intro?.eyebrow && (
+            <p className="text-sm font-semibold uppercase tracking-wide text-secondary mb-2">
+              {intro.eyebrow}
+            </p>
+          )}
+          <h1 className="mb-4">{intro?.heading}</h1>
+          {intro?.paragraph && <p className="max-w-2xl text-muted-foreground text-lg">{intro.paragraph}</p>}
         </div>
       </section>
 

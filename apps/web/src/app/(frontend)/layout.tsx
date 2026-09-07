@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Poppins, Inter, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
+import { getPayloadClient } from "@/lib/payload";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { PortalTopbar } from "@/components/portal-topbar";
@@ -22,17 +23,30 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "South Coast Residents' Association",
-  description:
-    "Representing residents, property owners and businesses from Likoni to Lunga Lunga.",
-};
+export const revalidate = 60;
 
-export default function RootLayout({
+export async function generateMetadata(): Promise<Metadata> {
+  const payload = await getPayloadClient();
+  const settings = await payload.findGlobal({ slug: "site-settings" });
+  return {
+    title: settings.seoDefaults?.defaultTitle || "South Coast Residents' Association",
+    description:
+      settings.seoDefaults?.defaultDescription ||
+      "Representing residents, property owners and businesses from Likoni to Lunga Lunga.",
+  };
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const payload = await getPayloadClient();
+  const [settings, navigation] = await Promise.all([
+    payload.findGlobal({ slug: "site-settings" }),
+    payload.findGlobal({ slug: "main-navigation" }),
+  ]);
+
   return (
     <html
       lang="en"
@@ -45,10 +59,10 @@ export default function RootLayout({
             strategy="afterInteractive"
           />
         )}
-        <SiteHeader />
+        <SiteHeader settings={settings} navigation={navigation} />
         <PortalTopbar />
         <main className="flex-1">{children}</main>
-        <SiteFooter />
+        <SiteFooter settings={settings} navigation={navigation} />
       </body>
     </html>
   );

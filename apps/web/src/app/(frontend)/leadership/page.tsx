@@ -6,11 +6,15 @@ export const revalidate = 60;
 
 export default async function LeadershipPage() {
   const payload = await getPayloadClient();
-  const { docs: people } = await payload.find({
-    collection: "people",
-    limit: 100,
-    depth: 1,
-  });
+  const [{ docs: people }, pageIntros] = await Promise.all([
+    payload.find({
+      collection: "people",
+      limit: 100,
+      depth: 1,
+    }),
+    payload.findGlobal({ slug: "page-intros" }),
+  ]);
+  const intro = pageIntros.leadership;
 
   const sorted = [...people].sort((a, b) => {
     const aIndex = roleOrder.indexOf(a.role);
@@ -33,14 +37,13 @@ export default async function LeadershipPage() {
         }}
       >
         <div className="mx-auto w-[min(1280px,92%)]">
-          <p className="text-sm font-semibold uppercase tracking-wide text-white/80 mb-2">
-            Leadership
-          </p>
-          <h1 className="text-white mb-4">SCRA Executive Committee</h1>
-          <p className="max-w-2xl text-white/90 text-lg">
-            The people leading SCRA&apos;s work on behalf of South Coast
-            residents and property owners.
-          </p>
+          {intro?.eyebrow && (
+            <p className="text-sm font-semibold uppercase tracking-wide text-white/80 mb-2">
+              {intro.eyebrow}
+            </p>
+          )}
+          <h1 className="text-white mb-4">{intro?.heading}</h1>
+          {intro?.paragraph && <p className="max-w-2xl text-white/90 text-lg">{intro.paragraph}</p>}
         </div>
       </section>
 

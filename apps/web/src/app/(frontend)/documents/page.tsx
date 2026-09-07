@@ -9,11 +9,15 @@ export const revalidate = 60;
 
 export default async function DocumentsPage() {
   const payload = await getPayloadClient();
-  const { docs: documents } = await payload.find({
-    collection: "documents",
-    limit: 200,
-    sort: "-publishedDate",
-  });
+  const [{ docs: documents }, pageIntros] = await Promise.all([
+    payload.find({
+      collection: "documents",
+      limit: 200,
+      sort: "-publishedDate",
+    }),
+    payload.findGlobal({ slug: "page-intros" }),
+  ]);
+  const intro = pageIntros.documents;
   const { membership } = await getPortalSession();
   const isActiveMember = membership ? isMembershipActive(membership) : false;
 
@@ -31,21 +35,20 @@ export default async function DocumentsPage() {
     <>
       <section className="bg-muted py-16 md:py-20">
         <div className="mx-auto w-[min(1280px,92%)]">
-          <p className="text-sm font-semibold uppercase tracking-wide text-secondary mb-2">
-            Knowledge Centre
-          </p>
-          <h1 className="mb-4">Reports, Minutes &amp; Public Documents</h1>
-          <p className="max-w-2xl text-muted-foreground text-lg">
-            A searchable library of SCRA&apos;s annual reports, meeting
-            minutes, position papers, and other public documentation.
-          </p>
+          {intro?.eyebrow && (
+            <p className="text-sm font-semibold uppercase tracking-wide text-secondary mb-2">
+              {intro.eyebrow}
+            </p>
+          )}
+          <h1 className="mb-4">{intro?.heading}</h1>
+          {intro?.paragraph && <p className="max-w-2xl text-muted-foreground text-lg">{intro.paragraph}</p>}
         </div>
       </section>
 
       <section className="py-16">
         <div className="mx-auto w-[min(1280px,92%)] space-y-14">
           {sortedCategories.length === 0 && (
-            <p className="text-muted-foreground">No documents published yet.</p>
+            <p className="text-muted-foreground">{intro?.emptyStateText}</p>
           )}
           {sortedCategories.map((category) => (
             <div key={category}>

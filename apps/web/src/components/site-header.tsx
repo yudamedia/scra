@@ -6,70 +6,22 @@ import { useEffect, useRef, useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ChevronDownIcon, Menu01Icon, Cancel01Icon } from "@hugeicons/core-free-icons";
 import { authClient } from "@/lib/auth-client";
+import type { MainNavigation, SiteSetting } from "@/payload-types";
 
-type NavChild = { href: string; label: string };
-type NavItem = { href: string; label: string; children?: NavChild[] };
+type NavItem = NonNullable<MainNavigation["headerLinks"]>[number];
 
-const issueCategories: NavChild[] = [
-  { href: "/issues?category=roads-infrastructure", label: "Roads & Infrastructure" },
-  { href: "/issues?category=security", label: "Security" },
-  { href: "/issues?category=water-supply", label: "Water Supply" },
-  { href: "/issues?category=electricity", label: "Electricity" },
-  { href: "/issues?category=waste-management", label: "Waste Management" },
-  { href: "/issues?category=environment", label: "Environment" },
-  { href: "/issues?category=beach-access", label: "Beach Access" },
-  { href: "/issues?category=planning-development", label: "Planning & Development" },
-];
+export function SiteHeader({
+  settings,
+  navigation,
+}: {
+  settings: SiteSetting;
+  navigation: MainNavigation;
+}) {
+  const navLinks: NavItem[] = navigation.headerLinks ?? [];
+  const logoUrl =
+    (typeof settings.logo === "object" && settings.logo?.url) || "/api/media/file/logo-scra.jpg";
+  const orgName = settings.orgName || "South Coast Residents' Association";
 
-const navLinks: NavItem[] = [
-  { href: "/", label: "Home" },
-  {
-    href: "/about",
-    label: "About Us",
-    children: [
-      { href: "/about", label: "About SCRA" },
-      { href: "/leadership", label: "Leadership" },
-      { href: "/committees", label: "Committees" },
-    ],
-  },
-  {
-    href: "/issues",
-    label: "Issues",
-    children: [
-      { href: "/issues", label: "All Issues" },
-      { href: "/report-issue", label: "Report an Issue" },
-      ...issueCategories,
-    ],
-  },
-  {
-    href: "/news",
-    label: "News & Events",
-    children: [
-      { href: "/news", label: "Newsroom" },
-      { href: "/events", label: "Events" },
-    ],
-  },
-  {
-    href: "/documents",
-    label: "Resources",
-    children: [
-      { href: "/documents", label: "Knowledge Centre" },
-      { href: "/directory", label: "Community Directory" },
-      { href: "/areas", label: "Area Guides" },
-    ],
-  },
-  {
-    href: "/membership",
-    label: "Membership",
-    children: [
-      { href: "/membership", label: "Membership Overview" },
-      { href: "/membership/apply", label: "Apply for Membership" },
-    ],
-  },
-  { href: "/contact", label: "Contact" },
-];
-
-export function SiteHeader() {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileSubOpen, setMobileSubOpen] = useState<string | null>(null);
@@ -100,11 +52,7 @@ export function SiteHeader() {
     <header className="bg-card shadow-sm sticky top-0 z-40">
       <div className="mx-auto w-[min(1280px,92%)] h-[90px] flex items-center justify-between gap-6">
         <Link href="/" className="flex items-center shrink-0">
-          <img
-            src="/api/media/file/logo-scra.jpg"
-            alt="South Coast Residents' Association"
-            className="h-16 md:h-20 w-auto"
-          />
+          <img src={logoUrl} alt={orgName} className="h-16 md:h-20 w-auto" />
         </Link>
 
         <nav className="hidden lg:flex items-center gap-1">
@@ -112,20 +60,20 @@ export function SiteHeader() {
             <div
               key={link.href}
               className="relative"
-              onMouseEnter={() => link.children && openDropdown(link.label)}
-              onMouseLeave={() => link.children && scheduleClose()}
+              onMouseEnter={() => link.children?.length && openDropdown(link.label)}
+              onMouseLeave={() => link.children?.length && scheduleClose()}
             >
               <Link
                 href={link.href}
                 className="flex items-center gap-1 font-medium text-primary hover:text-secondary transition-colors text-sm px-3 py-2 rounded-md hover:bg-muted"
-                aria-expanded={link.children ? openMenu === link.label : undefined}
+                aria-expanded={link.children?.length ? openMenu === link.label : undefined}
               >
                 {link.label}
-                {link.children && (
+                {!!link.children?.length && (
                   <HugeiconsIcon icon={ChevronDownIcon} size={14} strokeWidth={2} />
                 )}
               </Link>
-              {link.children && openMenu === link.label && (
+              {!!link.children?.length && openMenu === link.label && (
                 <div className="absolute left-0 top-full pt-2 w-64 z-50">
                   <div className="bg-card rounded-lg shadow-lg border border-border py-2 grid">
                     {link.children.map((child) => (
@@ -187,7 +135,7 @@ export function SiteHeader() {
                   >
                     {link.label}
                   </Link>
-                  {link.children && (
+                  {!!link.children?.length && (
                     <button
                       type="button"
                       className="p-3 text-primary"
@@ -206,7 +154,7 @@ export function SiteHeader() {
                     </button>
                   )}
                 </div>
-                {link.children && mobileSubOpen === link.label && (
+                {!!link.children?.length && mobileSubOpen === link.label && (
                   <div className="pb-2 pl-4 flex flex-col">
                     {link.children.map((child) => (
                       <Link

@@ -5,45 +5,16 @@ import { getDefaultThumbnail } from "@/lib/default-thumbnail";
 import { eventTypeLabels } from "@/lib/format";
 import { getMapMarkers } from "@/lib/map-categories";
 import MapView from "@/components/map/map-view";
+import { ICON_MAP } from "@/lib/icon-options";
+import { resolveUploadUrl } from "@/lib/resolve-image";
 import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  InformationCircleIcon,
-  Shield01Icon,
-  NewsIcon,
-  Calendar01Icon,
-  Folder01Icon,
-  Call02Icon,
-  RoadIcon,
-  Shield02Icon,
-  DropletIcon,
-  Leaf01Icon,
-  Building01Icon,
-  Recycle01Icon,
-} from "@hugeicons/core-free-icons";
+import { Calendar01Icon } from "@hugeicons/core-free-icons";
 
 export const revalidate = 60;
 
-const quickLinks = [
-  { href: "/about", label: "About SCRA", sub: "Who we are", icon: InformationCircleIcon },
-  { href: "/committees", label: "Our Committees", sub: "Leadership & teams", icon: Shield01Icon },
-  { href: "/news", label: "Newsroom", sub: "Latest news", icon: NewsIcon },
-  { href: "/events", label: "Events", sub: "What's happening", icon: Calendar01Icon },
-  { href: "/documents", label: "Knowledge Centre", sub: "Reports & documents", icon: Folder01Icon },
-  { href: "/contact", label: "Contact Us", sub: "Get in touch", icon: Call02Icon },
-];
-
-const issueCategoryLinks = [
-  { category: "roads-infrastructure", label: "Roads & Infrastructure", desc: "Safe, reliable and well-maintained roads.", icon: RoadIcon },
-  { category: "security", label: "Security", desc: "Working towards safe communities for all.", icon: Shield02Icon },
-  { category: "water-supply", label: "Water Supply", desc: "Reliable and sustainable water for all residents.", icon: DropletIcon },
-  { category: "environment", label: "Environment", desc: "Protecting our natural heritage and coastline.", icon: Leaf01Icon },
-  { category: "planning-development", label: "Planning & Development", desc: "Responsible development for a sustainable future.", icon: Building01Icon },
-  { category: "waste-management", label: "Waste Management", desc: "Cleaner communities through better systems.", icon: Recycle01Icon },
-];
-
 export default async function HomePage() {
   const payload = await getPayloadClient();
-  const [{ docs: posts }, { docs: upcomingEvents }, defaultThumbnail] =
+  const [{ docs: posts }, { docs: upcomingEvents }, defaultThumbnail, homepage, issueCategories] =
     await Promise.all([
       payload.find({ collection: "posts", limit: 3, sort: "-publishedDate", depth: 1 }),
       payload.find({
@@ -53,6 +24,8 @@ export default async function HomePage() {
         depth: 0,
       }),
       getDefaultThumbnail(),
+      payload.findGlobal({ slug: "homepage" }),
+      payload.findGlobal({ slug: "issue-categories" }),
     ]);
 
   const { docs: issues } = await payload.find({
@@ -73,45 +46,41 @@ export default async function HomePage() {
     .filter((e) => new Date(e.startDate).getTime() >= now)
     .slice(0, 3);
 
+  const featuredCategories = (issueCategories.categories ?? []).filter((c) => c.featuredOnHomepage);
+  const heroImageUrl = resolveUploadUrl(homepage.hero.image, "/hero/homepage.jpg");
+
   return (
     <>
       {/* Hero */}
       <section
         className="relative text-white pt-24 pb-40 md:pt-32 md:pb-52"
         style={{
-          background:
-            "linear-gradient(rgba(13,43,91,.72), rgba(7,28,61,.85)), url(/hero/homepage.jpg)",
+          background: `linear-gradient(rgba(13,43,91,.72), rgba(7,28,61,.85)), url(${heroImageUrl})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
       >
         <div className="mx-auto w-[min(1280px,92%)]">
           <h1 className="text-white text-4xl md:text-5xl lg:text-6xl mb-6 max-w-3xl">
-            Working Together for a Better South Coast
+            {homepage.hero.heading}
           </h1>
-          <p className="text-white/90 text-lg max-w-xl mb-8">
-            Representing residents, property owners and businesses from
-            Likoni to Lunga Lunga since 1983.
-          </p>
+          {homepage.hero.subtext && (
+            <p className="text-white/90 text-lg max-w-xl mb-8">{homepage.hero.subtext}</p>
+          )}
           <div className="flex flex-wrap gap-4">
-            <Link
-              href="/membership"
-              className="inline-flex items-center justify-center rounded-md bg-white text-primary font-semibold px-7 py-3.5 hover:bg-white/90 transition-colors"
-            >
-              Become a Member
-            </Link>
-            <Link
-              href="/issues"
-              className="inline-flex items-center justify-center rounded-md border border-white/60 text-white font-semibold px-7 py-3.5 hover:bg-white/10 transition-colors"
-            >
-              View Current Issues
-            </Link>
-            <Link
-              href="/news"
-              className="inline-flex items-center justify-center rounded-md border border-white/60 text-white font-semibold px-7 py-3.5 hover:bg-white/10 transition-colors"
-            >
-              Latest Updates →
-            </Link>
+            {(homepage.hero.ctaButtons ?? []).map((btn) => (
+              <Link
+                key={btn.href}
+                href={btn.href}
+                className={
+                  btn.style === "secondary"
+                    ? "inline-flex items-center justify-center rounded-md border border-white/60 text-white font-semibold px-7 py-3.5 hover:bg-white/10 transition-colors"
+                    : "inline-flex items-center justify-center rounded-md bg-white text-primary font-semibold px-7 py-3.5 hover:bg-white/90 transition-colors"
+                }
+              >
+                {btn.label}
+              </Link>
+            ))}
           </div>
         </div>
       </section>
@@ -120,17 +89,21 @@ export default async function HomePage() {
       <section className="relative">
         <div className="mx-auto w-[min(1280px,92%)] -mt-20 md:-mt-24 relative z-10">
           <div className="bg-card rounded-xl shadow-lg p-6 md:p-8 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-6">
-            {quickLinks.map((link) => (
+            {(homepage.quickLinks ?? []).map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 className="flex flex-col items-center text-center gap-2 group"
               >
                 <span className="flex items-center justify-center w-14 h-14 rounded-full bg-secondary/10 text-secondary group-hover:bg-secondary group-hover:text-white transition-colors">
-                  <HugeiconsIcon icon={link.icon} size={26} strokeWidth={1.8} />
+                  {link.icon && ICON_MAP[link.icon] && (
+                    <HugeiconsIcon icon={ICON_MAP[link.icon]} size={26} strokeWidth={1.8} />
+                  )}
                 </span>
                 <span className="text-sm font-semibold text-primary">{link.label}</span>
-                <span className="text-xs text-muted-foreground hidden sm:block">{link.sub}</span>
+                {link.sub && (
+                  <span className="text-xs text-muted-foreground hidden sm:block">{link.sub}</span>
+                )}
               </Link>
             ))}
           </div>
@@ -143,10 +116,12 @@ export default async function HomePage() {
           <div className="mx-auto w-[min(1280px,92%)]">
             <div className="flex items-end justify-between mb-10 gap-4 flex-wrap">
               <div>
-                <p className="text-sm font-semibold uppercase tracking-wide text-secondary mb-2">
-                  News &amp; Updates
-                </p>
-                <h2>Stay Informed. Stay Involved.</h2>
+                {homepage.newsSection?.eyebrow && (
+                  <p className="text-sm font-semibold uppercase tracking-wide text-secondary mb-2">
+                    {homepage.newsSection.eyebrow}
+                  </p>
+                )}
+                <h2>{homepage.newsSection?.heading}</h2>
               </div>
               <Link href="/news" className="text-secondary font-medium hover:text-primary transition-colors">
                 View all news →
@@ -197,10 +172,12 @@ export default async function HomePage() {
         <div className="mx-auto w-[min(1280px,92%)]">
           <div className="flex items-end justify-between mb-10 gap-4 flex-wrap">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-wide text-secondary mb-2">
-                Issues We Are Working On
-              </p>
-              <h2>Representing Your Interests on the Issues That Matter.</h2>
+              {homepage.issuesSection?.eyebrow && (
+                <p className="text-sm font-semibold uppercase tracking-wide text-secondary mb-2">
+                  {homepage.issuesSection.eyebrow}
+                </p>
+              )}
+              <h2>{homepage.issuesSection?.heading}</h2>
             </div>
             <Link
               href="/issues"
@@ -210,15 +187,24 @@ export default async function HomePage() {
             </Link>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {issueCategoryLinks.map((cat) => (
+            {featuredCategories.map((cat) => (
               <Link
-                key={cat.category}
-                href={`/issues?category=${cat.category}`}
+                key={cat.value}
+                href={`/issues?category=${cat.value}`}
                 className="bg-card rounded-lg shadow-sm p-5 hover:-translate-y-1 hover:shadow-md transition-all"
               >
-                <HugeiconsIcon icon={cat.icon} size={24} strokeWidth={1.8} className="text-secondary mb-3" />
+                {cat.icon && ICON_MAP[cat.icon] && (
+                  <HugeiconsIcon
+                    icon={ICON_MAP[cat.icon]}
+                    size={24}
+                    strokeWidth={1.8}
+                    className="text-secondary mb-3"
+                  />
+                )}
                 <h3 className="text-primary text-sm mb-1">{cat.label}</h3>
-                <p className="text-muted-foreground text-xs">{cat.desc}</p>
+                {cat.description && (
+                  <p className="text-muted-foreground text-xs">{cat.description}</p>
+                )}
               </Link>
             ))}
           </div>
@@ -251,48 +237,33 @@ export default async function HomePage() {
       <section className="py-20 bg-primary text-white overflow-hidden relative">
         <div className="mx-auto w-[min(1280px,92%)] grid gap-10 lg:grid-cols-2 items-center">
           <div>
-            <h2 className="text-white mb-4">Stronger Together. Become a Member Today.</h2>
-            <p className="text-white/80 text-lg mb-8 max-w-md">
-              Your membership supports our advocacy, strengthens our voice
-              and helps build a better South Coast.
-            </p>
+            <h2 className="text-white mb-4">{homepage.membershipCta?.heading}</h2>
+            {homepage.membershipCta?.paragraph && (
+              <p className="text-white/80 text-lg mb-8 max-w-md">
+                {homepage.membershipCta.paragraph}
+              </p>
+            )}
             <Link
               href="/membership"
               className="inline-flex items-center justify-center rounded-md bg-white text-primary font-semibold px-7 py-3.5 hover:bg-white/90 transition-colors"
             >
-              Join / Renew Membership →
+              {homepage.membershipCta?.buttonLabel}
             </Link>
           </div>
           <div className="grid gap-6">
-            <div className="flex items-start gap-4">
-              <span className="flex items-center justify-center w-10 h-10 rounded-full bg-white/15 shrink-0">
-                <HugeiconsIcon icon={NewsIcon} size={18} strokeWidth={1.8} />
-              </span>
-              <div>
-                <h3 className="text-white text-base mb-0.5">Have Your Voice Heard</h3>
-                <p className="text-white/70 text-sm">Influence decisions that impact our communities.</p>
+            {(homepage.membershipCta?.benefits ?? []).map((benefit) => (
+              <div key={benefit.title} className="flex items-start gap-4">
+                <span className="flex items-center justify-center w-10 h-10 rounded-full bg-white/15 shrink-0">
+                  {benefit.icon && ICON_MAP[benefit.icon] && (
+                    <HugeiconsIcon icon={ICON_MAP[benefit.icon]} size={18} strokeWidth={1.8} />
+                  )}
+                </span>
+                <div>
+                  <h3 className="text-white text-base mb-0.5">{benefit.title}</h3>
+                  {benefit.text && <p className="text-white/70 text-sm">{benefit.text}</p>}
+                </div>
               </div>
-            </div>
-            <div className="flex items-start gap-4">
-              <span className="flex items-center justify-center w-10 h-10 rounded-full bg-white/15 shrink-0">
-                <HugeiconsIcon icon={Folder01Icon} size={18} strokeWidth={1.8} />
-              </span>
-              <div>
-                <h3 className="text-white text-base mb-0.5">Access Information</h3>
-                <p className="text-white/70 text-sm">Stay updated with reports, news and alerts.</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-4">
-              <span className="flex items-center justify-center w-10 h-10 rounded-full bg-white/15 shrink-0">
-                <HugeiconsIcon icon={Building01Icon} size={18} strokeWidth={1.8} />
-              </span>
-              <div>
-                <h3 className="text-white text-base mb-0.5">Build a Better South Coast</h3>
-                <p className="text-white/70 text-sm">
-                  Together, we create a safer, cleaner and more sustainable region.
-                </p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
@@ -341,9 +312,7 @@ export default async function HomePage() {
             ) : (
               <div className="bg-card rounded-lg shadow-sm p-8 text-center">
                 <HugeiconsIcon icon={Calendar01Icon} size={28} strokeWidth={1.5} className="text-secondary mx-auto mb-3" />
-                <p className="text-muted-foreground text-sm">
-                  No events scheduled right now — check back soon.
-                </p>
+                <p className="text-muted-foreground text-sm">{homepage.eventsEmptyStateText}</p>
               </div>
             )}
           </div>

@@ -6,7 +6,7 @@ export const revalidate = 60;
 
 export default async function NewsIndexPage() {
   const payload = await getPayloadClient();
-  const [{ docs: posts }, defaultThumbnail] = await Promise.all([
+  const [{ docs: posts }, defaultThumbnail, pageIntros] = await Promise.all([
     payload.find({
       collection: "posts",
       limit: 100,
@@ -14,7 +14,9 @@ export default async function NewsIndexPage() {
       depth: 1,
     }),
     getDefaultThumbnail(),
+    payload.findGlobal({ slug: "page-intros" }),
   ]);
+  const intro = pageIntros.news;
 
   return (
     <>
@@ -28,14 +30,13 @@ export default async function NewsIndexPage() {
         }}
       >
         <div className="mx-auto w-[min(1280px,92%)]">
-          <p className="text-sm font-semibold uppercase tracking-wide text-white/80 mb-2">
-            Newsroom
-          </p>
-          <h1 className="text-white mb-4">Latest from SCRA</h1>
-          <p className="max-w-2xl text-white/90 text-lg">
-            Updates, meeting notes, and announcements from the South Coast
-            Residents&apos; Association.
-          </p>
+          {intro?.eyebrow && (
+            <p className="text-sm font-semibold uppercase tracking-wide text-white/80 mb-2">
+              {intro.eyebrow}
+            </p>
+          )}
+          <h1 className="text-white mb-4">{intro?.heading}</h1>
+          {intro?.paragraph && <p className="max-w-2xl text-white/90 text-lg">{intro.paragraph}</p>}
         </div>
       </section>
 

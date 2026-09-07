@@ -1,11 +1,16 @@
 import ReactMarkdown from "react-markdown";
-import { privacyPolicyMarkdown } from "@/content/legal";
+import { getPayloadClient } from "@/lib/payload";
+
+export const revalidate = 60;
 
 export const metadata = {
   title: "Privacy Policy — South Coast Residents' Association",
 };
 
-export default function PrivacyPolicyPage() {
+export default async function PrivacyPolicyPage() {
+  const payload = await getPayloadClient();
+  const legalPages = await payload.findGlobal({ slug: "legal-pages" });
+
   return (
     <section className="py-16 md:py-20">
       <div className="mx-auto w-[min(1280px,92%)] max-w-3xl">
@@ -19,7 +24,7 @@ export default function PrivacyPolicyPage() {
             [&_li]:leading-relaxed
             [&_strong]:font-semibold [&_strong]:text-foreground"
         >
-          <ReactMarkdown>{privacyPolicyMarkdown}</ReactMarkdown>
+          <ReactMarkdown>{legalPages.privacyPolicyMarkdown}</ReactMarkdown>
         </div>
       </div>
     </section>

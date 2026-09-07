@@ -1,51 +1,37 @@
 import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  Facebook01Icon,
-  Call02Icon,
-  Mail01Icon,
-  Location01Icon,
-} from "@hugeicons/core-free-icons";
+import { Call02Icon, Mail01Icon, Location01Icon } from "@hugeicons/core-free-icons";
+import { ICON_MAP } from "@/lib/icon-options";
+import type { MainNavigation, SiteSetting } from "@/payload-types";
 
-const quickLinks = [
-  { href: "/", label: "Home" },
-  { href: "/about", label: "About Us" },
-  { href: "/issues", label: "Issues" },
-  { href: "/news", label: "Newsroom" },
-  { href: "/events", label: "Events" },
-];
+const SOCIAL_ICON_MAP: Record<string, string> = {
+  facebook: "facebook-01",
+};
 
-const resourceLinks = [
-  { href: "/documents", label: "Knowledge Centre" },
-  { href: "/directory", label: "Community Directory" },
-  { href: "/areas", label: "Area Guides" },
-  { href: "/report-issue", label: "Report an Issue" },
-  { href: "/membership/apply", label: "Apply for Membership" },
-  { href: "/portal/login", label: "Member Login" },
-  { href: "/contact", label: "Contact Us" },
-];
+export function SiteFooter({
+  settings,
+  navigation,
+}: {
+  settings: SiteSetting;
+  navigation: MainNavigation;
+}) {
+  const logoUrl =
+    (typeof settings.logo === "object" && settings.logo?.url) || "/api/media/file/logo-scra.jpg";
+  const orgName = settings.orgName || "South Coast Residents' Association";
+  const quickLinks = navigation.footerQuickLinks ?? [];
+  const resourceLinks = navigation.footerResourceLinks ?? [];
+  const legalLinks = navigation.footerLegalLinks ?? [];
+  const social = settings.social ?? [];
 
-export function SiteFooter() {
   return (
     <footer className="bg-primary text-white border-t border-white/15">
       <div className="mx-auto w-[min(1280px,92%)] py-16 grid gap-12 sm:grid-cols-2 lg:grid-cols-4">
         <div className="lg:col-span-1">
           <div className="flex items-center gap-3 mb-4">
-            <img
-              src="/api/media/file/logo-scra.jpg"
-              alt="South Coast Residents' Association"
-              className="h-12 w-auto rounded"
-            />
-            <span className="font-heading font-bold leading-tight text-white">
-              South Coast
-              <br />
-              Residents&apos; Association
-            </span>
+            <img src={logoUrl} alt={orgName} className="h-12 w-auto rounded" />
+            <span className="font-heading font-bold leading-tight text-white">{orgName}</span>
           </div>
-          <p className="text-white/70 text-sm leading-relaxed">
-            Representing residents, property owners and businesses from
-            Likoni to Lunga Lunga since 1983.
-          </p>
+          <p className="text-white/70 text-sm leading-relaxed">{settings.tagline}</p>
         </div>
 
         <div>
@@ -89,50 +75,79 @@ export function SiteFooter() {
             Get in Touch
           </h3>
           <ul className="flex flex-col gap-3 text-sm">
-            <li className="flex items-start gap-2 text-white/75">
-              <HugeiconsIcon icon={Location01Icon} size={18} strokeWidth={2} className="shrink-0 mt-0.5" />
-              <span>Diani, Kenya</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <HugeiconsIcon icon={Call02Icon} size={18} strokeWidth={2} className="shrink-0 mt-0.5 text-white/75" />
-              <a href="tel:+254720998258" className="text-white/75 hover:text-white transition-colors">
-                +254 720 998258
-              </a>
-            </li>
-            <li className="flex items-start gap-2">
-              <HugeiconsIcon icon={Mail01Icon} size={18} strokeWidth={2} className="shrink-0 mt-0.5 text-white/75" />
-              <a href="mailto:chair@scra.co.ke" className="text-white/75 hover:text-white transition-colors">
-                chair@scra.co.ke
-              </a>
-            </li>
-            <li className="flex items-center gap-3 mt-1">
-              <a
-                href="https://www.facebook.com/groups/228531647320531/"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="SCRA on Facebook"
-                className="flex items-center justify-center w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-              >
-                <HugeiconsIcon icon={Facebook01Icon} size={18} strokeWidth={2} />
-              </a>
-            </li>
+            {settings.contact?.addressLine1 && (
+              <li className="flex items-start gap-2 text-white/75">
+                <HugeiconsIcon icon={Location01Icon} size={18} strokeWidth={2} className="shrink-0 mt-0.5" />
+                <span>{settings.contact.addressLine1}</span>
+              </li>
+            )}
+            {settings.contact?.phone && (
+              <li className="flex items-start gap-2">
+                <HugeiconsIcon icon={Call02Icon} size={18} strokeWidth={2} className="shrink-0 mt-0.5 text-white/75" />
+                <a
+                  href={`tel:${settings.contact.phone.replace(/\s+/g, "")}`}
+                  className="text-white/75 hover:text-white transition-colors"
+                >
+                  {settings.contact.phone}
+                </a>
+              </li>
+            )}
+            {settings.contact?.email && (
+              <li className="flex items-start gap-2">
+                <HugeiconsIcon icon={Mail01Icon} size={18} strokeWidth={2} className="shrink-0 mt-0.5 text-white/75" />
+                <a
+                  href={`mailto:${settings.contact.email}`}
+                  className="text-white/75 hover:text-white transition-colors"
+                >
+                  {settings.contact.email}
+                </a>
+              </li>
+            )}
+            {social.length > 0 && (
+              <li className="flex items-center gap-3 mt-1">
+                {social.map((entry) => {
+                  const icon = ICON_MAP[SOCIAL_ICON_MAP[entry.platform] ?? ""];
+                  if (!icon) return null;
+                  return (
+                    <a
+                      key={entry.id ?? entry.url}
+                      href={entry.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`${orgName} on ${entry.platform}`}
+                      className="flex items-center justify-center w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                    >
+                      <HugeiconsIcon icon={icon} size={18} strokeWidth={2} />
+                    </a>
+                  );
+                })}
+              </li>
+            )}
           </ul>
         </div>
       </div>
 
       <div className="border-t border-white/15">
         <div className="mx-auto w-[min(1280px,92%)] py-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-white/60">
-          <p>© {new Date().getFullYear()} South Coast Residents&apos; Association. All rights reserved.</p>
+          <p>
+            © {new Date().getFullYear()} {settings.footerLegal?.copyrightName || orgName}. All
+            rights reserved.
+          </p>
           <p className="flex items-center gap-2">
-            <Link href="/privacy-policy" className="hover:text-white transition-colors">
-              Privacy Policy
-            </Link>
-            <span aria-hidden="true">|</span>
-            <Link href="/terms-of-service" className="hover:text-white transition-colors">
-              Terms of Service
-            </Link>
-            <span aria-hidden="true">|</span>
-            <span>Built by GraphicStation</span>
+            {legalLinks.map((link, i) => (
+              <span key={link.href} className="flex items-center gap-2">
+                {i > 0 && <span aria-hidden="true">|</span>}
+                <Link href={link.href} className="hover:text-white transition-colors">
+                  {link.label}
+                </Link>
+              </span>
+            ))}
+            {settings.footerLegal?.builtByText && (
+              <>
+                <span aria-hidden="true">|</span>
+                <span>{settings.footerLegal.builtByText}</span>
+              </>
+            )}
           </p>
         </div>
       </div>

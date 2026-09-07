@@ -19,6 +19,14 @@ import { Events } from './collections/Events'
 import { Memberships } from './collections/Memberships'
 import { Payments } from './collections/Payments'
 import { IssueReports } from './collections/IssueReports'
+import { SiteSettings } from './globals/SiteSettings'
+import { MainNavigation } from './globals/MainNavigation'
+import { IssueCategories } from './globals/IssueCategories'
+import { Homepage } from './globals/Homepage'
+import { AboutPage } from './globals/AboutPage'
+import { MembershipPage } from './globals/MembershipPage'
+import { PageIntros } from './globals/PageIntros'
+import { LegalPages } from './globals/LegalPages'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -41,6 +49,16 @@ export default buildConfig({
     Memberships,
     Payments,
     IssueReports,
+  ],
+  globals: [
+    SiteSettings,
+    MainNavigation,
+    IssueCategories,
+    Homepage,
+    AboutPage,
+    MembershipPage,
+    PageIntros,
+    LegalPages,
   ],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
