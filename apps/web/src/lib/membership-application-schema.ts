@@ -10,6 +10,14 @@ export const maxAdditionalMembersByType: Record<(typeof membershipApplicationTyp
   corporate: 3,
 };
 
+// Fields only present in the DOM conditionally (e.g. corporateBusinessName)
+// come back as `null` from FormData.get() when absent, not `undefined` —
+// z.string().optional() only tolerates undefined, so normalize null first.
+const optionalString = z.preprocess(
+  (v) => (v === null || v === undefined || v === "" ? undefined : v),
+  z.string().trim().optional()
+);
+
 const additionalMemberSchema = z.object({
   surname: z.string().trim().min(1),
   firstName: z.string().trim().min(1),
@@ -27,10 +35,10 @@ export const membershipApplicationSchema = z
     // email) — a new application always needs one to receive the portal
     // account invite once payment is confirmed.
     email: z.string().trim().email("Enter a valid email"),
-    postalAddress: z.string().trim().optional(),
-    town: z.string().trim().optional(),
-    postalCode: z.string().trim().optional(),
-    corporateBusinessName: z.string().trim().optional(),
+    postalAddress: optionalString,
+    town: optionalString,
+    postalCode: optionalString,
+    corporateBusinessName: optionalString,
     additionalMembers: z.array(additionalMemberSchema).max(3).optional(),
     paymentMethod: z.enum(["bank_transfer", "cash"]),
   })
