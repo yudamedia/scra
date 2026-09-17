@@ -1,5 +1,5 @@
 import type { PayloadRequest } from 'payload'
-import type { Payment } from '../payload-types'
+import type { Membership, Payment } from '../payload-types'
 
 import { auth } from './auth'
 import { sendPaymentConfirmedEmail } from './email'
@@ -10,10 +10,80 @@ type Contact = {
   email?: string | null
 }
 
+type LinkedAuthUser = NonNullable<Membership['linkedAuthUsers']>[number]
+
 const MS_PER_DAY = 86_400_000
+const ADDITIONAL_MEMBER_LETTERS = 'abcdefghijklmnopqrstuvwxyz'
 
 function addDays(date: Date, days: number): Date {
   return new Date(date.getTime() + days * MS_PER_DAY)
+}
+
+/**
+ * The single account-provisioning path for a membership's portal accounts —
+ * called both from activateMembership() below (on payment confirmation) and
+ * from the one-off backfill script (src/seed/backfill-portal-accounts.ts), so
+ * the two can never drift apart. Every contact (primary + additional
+ * members, any membership type) with an email gets a linked, passwordless
+ * Better Auth account plus a "set your password" email — but only if the
+ * *primary* contact also has an email; a membership whose primary has no
+ * email provisions nothing at all, even if an additional member has one.
+ *
+ * The primary contact's linked entry is tagged with the bare
+ * membershipNumber (e.g. "435"); each additional member that gets an
+ * account is tagged with that number suffixed -a/-b/-c... in order,
+ * assigned only to members who actually receive an account.
+ *
+ * Idempotent: contacts already present in `membership.linkedAuthUsers` (by
+ * lowercased email) are skipped, so re-running against an already-linked
+ * membership is a no-op for them.
+ */
+export async function provisionPortalAccounts(membership: Membership): Promise<LinkedAuthUser[]> {
+  const linkedAuthUsers: LinkedAuthUser[] = [...(membership.linkedAuthUsers ?? [])]
+
+  const primaryEmail = membership.primaryContact.email?.trim()
+  if (!primaryEmail) return linkedAuthUsers
+
+  const membershipNumber = membership.membershipNumber ?? ''
+  const contacts: { contact: Contact; memberNumber: string }[] = [
+    { contact: membership.primaryContact, memberNumber: membershipNumber },
+  ]
+  let letterIndex = 0
+  for (const additionalMember of membership.additionalMembers ?? []) {
+    if (!additionalMember.email?.trim()) continue
+    const letter = ADDITIONAL_MEMBER_LETTERS[letterIndex] ?? `x${letterIndex}`
+    letterIndex += 1
+    contacts.push({ contact: additionalMember, memberNumber: `${membershipNumber}-${letter}` })
+  }
+
+  const existingEmails = new Set(linkedAuthUsers.map((u) => u.email.toLowerCase()))
+
+  for (const { contact, memberNumber } of contacts) {
+    const email = contact.email?.trim().toLowerCase()
+    if (!email || existingEmails.has(email)) continue
+
+    try {
+      const created = await auth.api.createUser({
+        body: {
+          email,
+          name: `${contact.firstName ?? ''} ${contact.surname}`.trim(),
+        },
+      })
+      linkedAuthUsers.push({ authUserId: created.user.id, email, memberNumber })
+      existingEmails.add(email)
+
+      await auth.api.requestPasswordReset({
+        body: { email, redirectTo: '/portal/reset-password' },
+      })
+    } catch (err) {
+      // Known limitation: an email already registered under a different
+      // membership isn't linked here. Logged for secretariat
+      // follow-up rather than failing the whole activation.
+      console.error(`[membership-activation] failed to provision portal account for ${email}:`, err)
+    }
+  }
+
+  return linkedAuthUsers
 }
 
 /**
@@ -49,39 +119,7 @@ export async function activateMembership({ payment, req }: { payment: Payment; r
     }).catch((err) => console.error('[email] payment confirmed notification failed:', err))
   }
 
-  const contacts: Contact[] =
-    membership.type === 'corporate'
-      ? [membership.primaryContact, ...(membership.additionalMembers ?? [])].slice(0, 4)
-      : [membership.primaryContact]
-
-  const existingEmails = new Set((membership.linkedAuthUsers ?? []).map((u) => u.email.toLowerCase()))
-  const linkedAuthUsers = [...(membership.linkedAuthUsers ?? [])]
-
-  for (const contact of contacts) {
-    const email = contact.email?.trim().toLowerCase()
-    if (!email || existingEmails.has(email)) continue
-
-    try {
-      const created = await auth.api.createUser({
-        body: {
-          email,
-          name: `${contact.firstName} ${contact.surname}`.trim(),
-        },
-      })
-      linkedAuthUsers.push({ authUserId: created.user.id, email })
-      existingEmails.add(email)
-
-      await auth.api.signInMagicLink({
-        body: { email, callbackURL: '/portal' },
-        headers: new Headers(),
-      })
-    } catch (err) {
-      // Known limitation: an email already registered under a different
-      // membership record isn't linked here. Logged for secretariat
-      // follow-up rather than failing the whole activation.
-      console.error(`[membership-activation] failed to provision portal account for ${email}:`, err)
-    }
-  }
+  const linkedAuthUsers = await provisionPortalAccounts(membership)
 
   await payload.update({
     collection: 'memberships',

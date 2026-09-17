@@ -1,4 +1,5 @@
 import type { GlobalConfig } from 'payload'
+import { canManage, publicReadOrManage } from '@/lib/permissions'
 
 export const LegalPages: GlobalConfig = {
   slug: 'legal-pages',
@@ -8,7 +9,8 @@ export const LegalPages: GlobalConfig = {
       'Markdown source for the Privacy Policy and Terms of Service pages, rendered client-side via react-markdown — write standard markdown (#/## headings, **bold**, - lists) here.',
   },
   access: {
-    read: () => true,
+    read: publicReadOrManage('legal-pages'),
+    update: canManage('legal-pages', 'update'),
   },
   fields: [
     {

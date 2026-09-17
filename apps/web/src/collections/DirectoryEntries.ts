@@ -1,14 +1,19 @@
 import type { CollectionConfig } from 'payload'
 import { applyGeocodeHook } from '@/lib/geocode'
+import { canManage, publicReadOrManage } from '@/lib/permissions'
 
 export const DirectoryEntries: CollectionConfig = {
   slug: 'directory-entries',
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'category', 'area'],
+    group: 'Collections',
   },
   access: {
-    read: () => true,
+    read: publicReadOrManage('directory-entries'),
+    create: canManage('directory-entries', 'create'),
+    update: canManage('directory-entries', 'update'),
+    delete: canManage('directory-entries', 'delete'),
   },
   hooks: {
     beforeChange: [

@@ -1,5 +1,6 @@
 import type { GlobalConfig } from 'payload'
 import { iconSelectOptions } from '@/lib/icon-options'
+import { canManage, publicReadOrManage } from '@/lib/permissions'
 
 export const MembershipPage: GlobalConfig = {
   slug: 'membership-page',
@@ -7,7 +8,8 @@ export const MembershipPage: GlobalConfig = {
     group: 'Site Content',
   },
   access: {
-    read: () => true,
+    read: publicReadOrManage('membership-page'),
+    update: canManage('membership-page', 'update'),
   },
   fields: [
     {

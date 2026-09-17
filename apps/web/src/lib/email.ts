@@ -10,23 +10,24 @@ function getClient() {
 }
 
 /**
- * Used both for a brand-new portal account's first login and for every
- * return visit — accounts are magic-link only, there is no separate
- * "set your password" email to send.
+ * Sent via Better Auth's emailAndPassword.sendResetPassword — used both for a
+ * brand-new portal account's first-ever password (accounts are provisioned
+ * passwordless, then this link is how the person sets one) and for a genuine
+ * forgot-password request later, since both share the same underlying flow.
  */
-export async function sendMagicLinkEmail(email: string, url: string) {
+export async function sendSetPasswordEmail(email: string, url: string) {
   const resend = getClient();
   if (!resend) {
-    console.log(`[email] RESEND_API_KEY not set — magic link for ${email}: ${url}`);
+    console.log(`[email] RESEND_API_KEY not set — set-password link for ${email}: ${url}`);
     return;
   }
 
   await resend.emails.send({
     from: FROM,
     to: email,
-    subject: "Your SCRA Member Portal sign-in link",
+    subject: "Set your SCRA Member Portal password",
     html: `
-      <p>Click below to access your SCRA Member Portal account:</p>
+      <p>Click below to set your SCRA Member Portal password:</p>
       <p><a href="${url}">${url}</a></p>
       <p>This link expires shortly and can only be used once. If you didn't request it, you can ignore this email.</p>
     `,
@@ -58,7 +59,7 @@ export async function sendMembershipApplicationConfirmationEmail(
       as membership No. ${data.membershipNumber}.</p>
       <p>You indicated you'll pay by ${paymentMethodLabel} — the amount due is KES ${data.amount.toLocaleString()}.
       Your membership will be activated once the secretariat confirms your payment, at which point you'll
-      receive a separate email with a link to sign in to the Member Portal.</p>
+      receive a separate email with a link to set your Member Portal password.</p>
       <p>No action is needed from you right now unless you haven't yet made payment.</p>
     `,
   });
@@ -124,7 +125,7 @@ export async function sendPaymentConfirmedEmail(
       ${
         data.paymentType === "renewal"
           ? `<p><a href="${process.env.NEXT_PUBLIC_BETTER_AUTH_URL || ""}/portal">Visit the Member Portal</a></p>`
-          : `<p>Look out for a separate email with a link to sign in to the Member Portal.</p>`
+          : `<p>Look out for a separate email with a link to set your Member Portal password.</p>`
       }
     `,
   });

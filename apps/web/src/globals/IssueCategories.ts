@@ -1,5 +1,6 @@
 import type { GlobalConfig } from 'payload'
 import { iconSelectOptions } from '@/lib/icon-options'
+import { canManage, publicReadOrManage } from '@/lib/permissions'
 
 // Mirrors `Issues.category`'s option set (src/collections/Issues.ts). Kept as a fixed list here
 // too (rather than dynamically reading the collection config) so a bad value can't silently slip
@@ -23,7 +24,8 @@ export const IssueCategories: GlobalConfig = {
       'Marketing copy (label/description/icon) for issue categories shown in the header dropdown, homepage tiles, and issues page filters. The underlying category values are defined in the Issues collection.',
   },
   access: {
-    read: () => true,
+    read: publicReadOrManage('issue-categories'),
+    update: canManage('issue-categories', 'update'),
   },
   fields: [
     {

@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
 import { sendIssueStatusChangedEmail } from '../lib/email'
+import { canManage, publicReadOrManage } from '@/lib/permissions'
 
 async function nextReferenceCode(payload: import('payload').Payload): Promise<string> {
   const { docs } = await payload.find({
@@ -27,9 +28,13 @@ export const IssueReports: CollectionConfig = {
   admin: {
     useAsTitle: 'referenceCode',
     defaultColumns: ['referenceCode', 'category', 'status', 'reporterName', 'createdAt'],
+    group: 'Collections',
   },
   access: {
-    read: () => true,
+    read: publicReadOrManage('issue-reports'),
+    create: canManage('issue-reports', 'create'),
+    update: canManage('issue-reports', 'update'),
+    delete: canManage('issue-reports', 'delete'),
   },
   hooks: {
     beforeChange: [

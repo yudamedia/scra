@@ -1,4 +1,5 @@
 import type { Field, GlobalConfig } from 'payload'
+import { canManage, publicReadOrManage } from '@/lib/permissions'
 
 const introFields: Field[] = [
   { name: 'eyebrow', type: 'text' },
@@ -23,7 +24,8 @@ export const PageIntros: GlobalConfig = {
       'Hero eyebrow/heading/paragraph for pages that only need a simple intro block above their CMS-driven list.',
   },
   access: {
-    read: () => true,
+    read: publicReadOrManage('page-intros'),
+    update: canManage('page-intros', 'update'),
   },
   fields: [
     {

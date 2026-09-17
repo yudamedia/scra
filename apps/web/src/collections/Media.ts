@@ -1,10 +1,17 @@
 import path from 'path'
 import type { CollectionConfig } from 'payload'
+import { canManage, publicReadOrManage } from '@/lib/permissions'
 
 export const Media: CollectionConfig = {
   slug: 'media',
+  admin: {
+    group: 'Collections',
+  },
   access: {
-    read: () => true,
+    read: publicReadOrManage('media'),
+    create: canManage('media', 'create'),
+    update: canManage('media', 'update'),
+    delete: canManage('media', 'delete'),
   },
   fields: [
     {

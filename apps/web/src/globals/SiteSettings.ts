@@ -1,4 +1,5 @@
 import type { GlobalConfig } from 'payload'
+import { canManage, publicReadOrManage } from '@/lib/permissions'
 
 export const SiteSettings: GlobalConfig = {
   slug: 'site-settings',
@@ -6,7 +7,8 @@ export const SiteSettings: GlobalConfig = {
     group: 'Site Content',
   },
   access: {
-    read: () => true,
+    read: publicReadOrManage('site-settings'),
+    update: canManage('site-settings', 'update'),
   },
   fields: [
     {

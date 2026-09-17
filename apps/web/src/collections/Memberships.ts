@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
 import { getNextMembershipNumber } from '../lib/memberships'
+import { canManage, publicReadOrManage } from '@/lib/permissions'
 
 export const Memberships: CollectionConfig = {
   slug: 'memberships',
@@ -9,9 +10,13 @@ export const Memberships: CollectionConfig = {
     defaultColumns: ['membershipNumber', 'type', 'primaryContact', 'expiryDate', 'adminRevoked'],
     description:
       'Active/expired status is computed from expiryDate + adminRevoked, not stored here.',
+    group: 'Collections',
   },
   access: {
-    read: () => true,
+    read: publicReadOrManage('memberships'),
+    create: canManage('memberships', 'create'),
+    update: canManage('memberships', 'update'),
+    delete: canManage('memberships', 'delete'),
   },
   hooks: {
     beforeChange: [
@@ -143,6 +148,14 @@ export const Memberships: CollectionConfig = {
       fields: [
         { name: 'authUserId', type: 'text', required: true },
         { name: 'email', type: 'email', required: true },
+        {
+          name: 'memberNumber',
+          type: 'text',
+          admin: {
+            description:
+              "The primary contact's own entry uses the bare membershipNumber; additional members are suffixed -a/-b/-c... in order.",
+          },
+        },
       ],
     },
     {

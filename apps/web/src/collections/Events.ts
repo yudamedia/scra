@@ -1,13 +1,18 @@
 import type { CollectionConfig } from 'payload'
+import { canManage, publicReadOrManage } from '@/lib/permissions'
 
 export const Events: CollectionConfig = {
   slug: 'events',
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'eventType', 'startDate'],
+    group: 'Collections',
   },
   access: {
-    read: () => true,
+    read: publicReadOrManage('events'),
+    create: canManage('events', 'create'),
+    update: canManage('events', 'update'),
+    delete: canManage('events', 'delete'),
   },
   fields: [
     {

@@ -1,13 +1,18 @@
 import type { CollectionConfig } from 'payload'
 import { applyGeocodeHook } from '@/lib/geocode'
+import { canManage, publicReadOrManage } from '@/lib/permissions'
 
 export const Areas: CollectionConfig = {
   slug: 'areas',
   admin: {
     useAsTitle: 'name',
+    group: 'Collections',
   },
   access: {
-    read: () => true,
+    read: publicReadOrManage('areas'),
+    create: canManage('areas', 'create'),
+    update: canManage('areas', 'update'),
+    delete: canManage('areas', 'delete'),
   },
   hooks: {
     beforeChange: [

@@ -1,14 +1,19 @@
 import path from 'path'
 import type { CollectionConfig } from 'payload'
+import { canManage, publicReadOrManage } from '@/lib/permissions'
 
 export const Documents: CollectionConfig = {
   slug: 'documents',
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'category', 'publishedDate'],
+    group: 'Collections',
   },
   access: {
-    read: () => true,
+    read: publicReadOrManage('documents'),
+    create: canManage('documents', 'create'),
+    update: canManage('documents', 'update'),
+    delete: canManage('documents', 'delete'),
   },
   fields: [
     {

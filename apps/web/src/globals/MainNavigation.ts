@@ -1,4 +1,5 @@
 import type { GlobalConfig } from 'payload'
+import { canManage, publicReadOrManage } from '@/lib/permissions'
 
 const navChildFields = [
   { name: 'label', type: 'text' as const, required: true },
@@ -11,7 +12,8 @@ export const MainNavigation: GlobalConfig = {
     group: 'Site Content',
   },
   access: {
-    read: () => true,
+    read: publicReadOrManage('main-navigation'),
+    update: canManage('main-navigation', 'update'),
   },
   fields: [
     {

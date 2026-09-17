@@ -163,6 +163,44 @@ export interface UserAuthOperations {
  */
 export interface User {
   id: number;
+  name?: string | null;
+  /**
+   * Super Admins have full control over everything, including creating other users.
+   */
+  role: 'superAdmin' | 'admin';
+  /**
+   * Grants this admin access to specific collections or Site Content sections.
+   */
+  permissions?:
+    | {
+        resource:
+          | 'media'
+          | 'documents'
+          | 'areas'
+          | 'issues'
+          | 'directory-entries'
+          | 'committees'
+          | 'people'
+          | 'posts'
+          | 'events'
+          | 'memberships'
+          | 'payments'
+          | 'issue-reports'
+          | 'site-settings'
+          | 'main-navigation'
+          | 'issue-categories'
+          | 'homepage'
+          | 'about-page'
+          | 'membership-page'
+          | 'page-intros'
+          | 'legal-pages';
+        read?: boolean | null;
+        create?: boolean | null;
+        update?: boolean | null;
+        delete?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -614,6 +652,10 @@ export interface Membership {
     | {
         authUserId: string;
         email: string;
+        /**
+         * The primary contact's own entry uses the bare membershipNumber; additional members are suffixed -a/-b/-c... in order.
+         */
+        memberNumber?: string | null;
         id?: string | null;
       }[]
     | null;
@@ -833,6 +875,18 @@ export interface PayloadMigration {
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
+  name?: T;
+  role?: T;
+  permissions?:
+    | T
+    | {
+        resource?: T;
+        read?: T;
+        create?: T;
+        update?: T;
+        delete?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -1105,6 +1159,7 @@ export interface MembershipsSelect<T extends boolean = true> {
     | {
         authUserId?: T;
         email?: T;
+        memberNumber?: T;
         id?: T;
       };
   lastReminderStage?: T;

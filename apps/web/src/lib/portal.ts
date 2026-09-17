@@ -5,7 +5,7 @@ import { auth } from './auth'
 import { getPayloadClient } from './payload'
 
 // Better Auth's fully-inferred session type collapses to `never` once enough
-// plugins (admin + magicLink) stack up — narrowed to the shape this app
+// plugins (admin(), etc.) stack up — narrowed to the shape this app
 // actually consumes rather than fighting that inference, and pinned via an
 // explicit return type so that inference issue can't leak into callers.
 type PortalAuthSession = { user: { id: string; email: string } }

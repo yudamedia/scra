@@ -1,15 +1,20 @@
 import type { CollectionConfig } from 'payload'
 
 import { activateMembership } from '../lib/membership-activation'
+import { canManage, publicReadOrManage } from '@/lib/permissions'
 
 export const Payments: CollectionConfig = {
   slug: 'payments',
   admin: {
     useAsTitle: 'id',
     defaultColumns: ['membership', 'amount', 'provider', 'paymentStatus', 'paymentType', 'confirmedAt'],
+    group: 'Collections',
   },
   access: {
-    read: () => true,
+    read: publicReadOrManage('payments'),
+    create: canManage('payments', 'create'),
+    update: canManage('payments', 'update'),
+    delete: canManage('payments', 'delete'),
   },
   hooks: {
     afterChange: [
